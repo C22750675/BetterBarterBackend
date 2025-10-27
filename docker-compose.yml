@@ -1,0 +1,27 @@
+services:
+  db:
+    # The official PostGIS image, which includes PostgreSQL and the PostGIS extension
+    image: postgis/postgis
+    
+    platform: linux/amd64
+    
+    container_name: betterbarter-prototype-db
+    
+    # Docker Compose will automatically read these values from the .env file
+    # in the same directory
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+      
+    # Map the container's port 5432 to the host machine's port 5432.
+    ports:
+      - "5432:5432"
+      
+    # Define a volume to persist the database data
+    volumes:
+      - ./data/postgis:/var/lib/postgresql/data
+      
+    # Set a restart policy to ensure the database container starts automatically
+    # if it crashes or if Docker is restarted
+    restart: unless-stopped
