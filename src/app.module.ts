@@ -5,6 +5,7 @@ import { UsersModule } from './users/users.module';
 import { ItemsModule } from './items/items.module';
 import { CirclesModule } from './circles/circles.module';
 import { TradesModule } from './trades/trades.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -15,7 +16,6 @@ import { TradesModule } from './trades/trades.module';
 
     // Setup TypeORM with PostgreSQL using ConfigService
     TypeOrmModule.forRootAsync({
-      // We are importing ConfigModule here to make ConfigService available for injection
       imports: [ConfigModule],
       // The useFactory function will be called to create the configuration object
       useFactory: (configService: ConfigService) => ({
@@ -26,8 +26,7 @@ import { TradesModule } from './trades/trades.module';
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        // synchronize: true should NOT be used in production.
-        // It's useful for development as it auto-creates the DB schema.
+
         synchronize: true,
       }),
       // This tells NestJS to inject the ConfigService into our useFactory function
@@ -39,6 +38,7 @@ import { TradesModule } from './trades/trades.module';
     ItemsModule,
     CirclesModule,
     TradesModule,
+    AuthModule
   ],
   controllers: [],
   providers: [],
