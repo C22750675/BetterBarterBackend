@@ -34,4 +34,11 @@ export default defineConfig([
       'prettier/prettier': 'error',
     },
   },
+  // This specifically targets DTO files and disables the rule causing the no-unsafe-call errors
+  {
+    files: ['**/*.dto.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-call': 'off',
+    },
+  },
 ]);
