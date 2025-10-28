@@ -14,6 +14,7 @@ import { UsersService } from '../users/users.service';
 import { CreateUserDto } from 'src/users/dtos/create-user.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { UserPayloadDto } from './dto/user-payload.dto';
+import { GetUser } from './decorators/get-user.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -49,7 +50,7 @@ export class AuthController {
   // This route is protected. You must include a valid JWT in the Authorization header
   @UseGuards(JwtAuthGuard)
   @Get('profile')
-  getProfile(@Request() req: UserPayloadDto) {
-    return req;
+  getProfile(@GetUser() user: UserPayloadDto) {
+    return user;
   }
 }
