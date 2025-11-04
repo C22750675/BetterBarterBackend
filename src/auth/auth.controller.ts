@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
-import { CreateUserDto } from 'src/users/dtos/create-user.dto';
+import { RegisterUserDto } from 'src/users/dtos/register-user.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { UserPayloadDto } from './dto/user-payload.dto';
 import { GetUser } from './decorators/get-user.decorator';
@@ -25,8 +25,8 @@ export class AuthController {
 
   // POST /auth/register
   @Post('register')
-  async register(@Body() createUserDto: CreateUserDto) {
-    const user = await this.usersService.create(createUserDto);
+  async register(@Body() registerUserDto: RegisterUserDto) {
+    const user = await this.usersService.register(registerUserDto);
     // Exclude password hash from the response
     const { passwordHash, ...result } = user;
     return result;
@@ -35,7 +35,7 @@ export class AuthController {
   // POST /auth/login
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() loginDto: CreateUserDto) {
+  async login(@Body() loginDto: RegisterUserDto) {
     const user = await this.authService.validateUser(
       loginDto.username,
       loginDto.password,

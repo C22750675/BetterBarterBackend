@@ -5,6 +5,8 @@ import { ValidationPipe } from '@nestjs/common'; // Import ValidationPipe
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  app.setGlobalPrefix('api');
+
   // Enable global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
@@ -13,6 +15,7 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(3000);
+  // Add the '0.0.0.0' host for emulator connectivity
+  await app.listen(3000, '0.0.0.0');
 }
 void bootstrap();
