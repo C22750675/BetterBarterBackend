@@ -15,6 +15,7 @@ import { RegisterUserDto } from 'src/users/dtos/register-user.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { UserPayloadDto } from './dto/user-payload.dto';
 import { GetUser } from './decorators/get-user.decorator';
+import { LoginUserDto } from 'src/users/dtos/login-user.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -27,15 +28,14 @@ export class AuthController {
   @Post('register')
   async register(@Body() registerUserDto: RegisterUserDto) {
     const user = await this.usersService.register(registerUserDto);
-    // Exclude password hash from the response
-    const { passwordHash, ...result } = user;
-    return result;
+
+    return this.authService.login(user);
   }
 
   // POST /auth/login
   @Post('login')
   @HttpCode(HttpStatus.OK)
-  async login(@Body() loginDto: RegisterUserDto) {
+  async login(@Body() loginDto: LoginUserDto) {
     const user = await this.authService.validateUser(
       loginDto.username,
       loginDto.password,

@@ -30,7 +30,9 @@ export class AuthService {
   login(user: ValidatedUser) {
     const payload = { username: user.username, sub: user.id };
     return {
-      access_token: this.jwtService.sign(payload),
+      accessToken: this.jwtService.sign(payload),
+      // Include the full user object (without the password hash)
+      user: user,
     };
   }
 }
