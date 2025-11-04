@@ -8,12 +8,15 @@ import { Repository } from 'typeorm';
 import { Item } from './entities/item.entity';
 import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
+import { Category } from './entities/category.entity';
 
 @Injectable()
 export class ItemsService {
   constructor(
     @InjectRepository(Item)
     private itemsRepository: Repository<Item>,
+    @InjectRepository(Category)
+    private categoriesRepository: Repository<Category>,
   ) {}
 
   /**
@@ -94,5 +97,15 @@ export class ItemsService {
     }
 
     await this.itemsRepository.delete(id);
+  }
+
+  /**
+   * Finds all available item categories.
+   */
+  async findAllCategories(): Promise<Category[]> {
+    // Fetches all categories, ordering by name is often useful for dropdowns.
+    return this.categoriesRepository.find({
+      order: { name: 'ASC' },
+    });
   }
 }

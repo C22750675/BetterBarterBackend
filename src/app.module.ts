@@ -38,7 +38,7 @@ import { AuthModule } from './auth/auth.module';
     ItemsModule,
     CirclesModule,
     TradesModule,
-    AuthModule
+    AuthModule,
   ],
   controllers: [],
   providers: [],

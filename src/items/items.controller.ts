@@ -73,4 +73,14 @@ export class ItemsController {
   remove(@Param('id') id: string, @GetUser('id') ownerId: string) {
     return this.itemsService.remove(id, ownerId);
   }
+
+  /**
+   * GET /items/categories
+   * Endpoint for fetching all available item categories.
+   */
+  @Get('categories')
+  // We'll keep this protected by JwtAuthGuard, assuming category data isn't needed pre-login.
+  findAllCategories() {
+    return this.itemsService.findAllCategories();
+  }
 }
