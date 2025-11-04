@@ -24,10 +24,10 @@ export class ItemsService {
    * @param createItemDto Data for the new item, including ownerId.
    * @returns The created item entity.
    */
-  async create(createItemDto: CreateItemDto): Promise<Item> {
+  async create(createItemDto: CreateItemDto, ownerId: string): Promise<Item> {
     // Note: The frontend CreateItemRequest maps directly to this DTO.
     // Assuming ownerId is correctly set on the DTO from the Auth Guard/Decorator in the controller.
-    const newItem = this.itemsRepository.create(createItemDto);
+    const newItem = this.itemsRepository.create({ ...createItemDto, ownerId });
     return this.itemsRepository.save(newItem);
   }
 

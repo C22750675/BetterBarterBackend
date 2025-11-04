@@ -50,7 +50,13 @@ export class AuthController {
   // This route is protected. You must include a valid JWT in the Authorization header
   @UseGuards(JwtAuthGuard)
   @Get('profile')
-  getProfile(@GetUser() user: UserPayloadDto) {
-    return user;
+  async getProfile(@GetUser() user: UserPayloadDto) {
+    const fullUser = await this.usersService.findProfileById(user.id);
+
+    if (!fullUser) {
+      throw new UnauthorizedException('Profile not found.');
+    }
+
+    return fullUser;
   }
 }

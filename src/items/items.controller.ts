@@ -11,49 +11,46 @@ import {
   HttpStatus,
 } from '@nestjs/common';
 import { ItemsService } from './items.service';
-import { CreateItemDto } from './dto/create-item.dto'; // Assuming DTO structure
-import { UpdateItemDto } from './dto/update-item.dto'; // Assuming DTO structure
-import { JwtAuthGuard } from '../auth/jwt-auth.guard'; // Path based on your structure
-import { GetUser } from '../auth/decorators/get-user.decorator'; // Path based on your structure
+import { CreateItemDto } from './dto/create-item.dto';
+import { UpdateItemDto } from './dto/update-item.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import type { ValidatedUser } from 'src/auth/interfaces/validated-user.type';
 
 @Controller('items')
-@UseGuards(JwtAuthGuard) // Protects all item routes by default
+@UseGuards(JwtAuthGuard)
 export class ItemsController {
   constructor(private readonly itemsService: ItemsService) {}
 
-  /**
-   * POST /items
-   * Endpoint for creating a new item (P1)
-   */
-  @Post()
-  @HttpCode(HttpStatus.CREATED)
-  create(@Body() createItemDto: CreateItemDto, @GetUser('id') ownerId: string) {
-    // The ownerId is automatically inserted from the JWT payload by the decorator
-    return this.itemsService.create({ ...createItemDto, ownerId });
+  // GET /items/categories
+  @Get('categories')
+  findAllCategories() {
+    return this.itemsService.findAllCategories();
   }
 
-  /**
-   * GET /items/my-items
-   * Endpoint for fetching all items owned by the authenticated user (P1)
-   */
+  // GET /items/my-items
   @Get('my-items')
-  findMyItems(@GetUser('id') ownerId: string) {
-    // This directly serves the /items/my-items endpoint used in AuthRepository.kt/ItemRepository.kt
-    return this.itemsService.findMyItems(ownerId);
+  findMyItems(@GetUser() user: ValidatedUser) {
+    return this.itemsService.findMyItems(user.id);
   }
 
-  /**
-   * GET /items/:id
-   * Endpoint for fetching a single item's details
-   */
+  // GET /items/:id
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.itemsService.findOne(id);
   }
 
   /**
+   * POST /items
+   */
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  create(@Body() createItemDto: CreateItemDto, @GetUser('id') ownerId: string) {
+    return this.itemsService.create({ ...createItemDto }, ownerId);
+  }
+
+  /**
    * PATCH /items/:id
-   * Endpoint for editing an item
    */
   @Patch(':id')
   update(
@@ -66,21 +63,10 @@ export class ItemsController {
 
   /**
    * DELETE /items/:id
-   * Endpoint for deleting an item
    */
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string, @GetUser('id') ownerId: string) {
     return this.itemsService.remove(id, ownerId);
-  }
-
-  /**
-   * GET /items/categories
-   * Endpoint for fetching all available item categories.
-   */
-  @Get('categories')
-  // We'll keep this protected by JwtAuthGuard, assuming category data isn't needed pre-login.
-  findAllCategories() {
-    return this.itemsService.findAllCategories();
   }
 }

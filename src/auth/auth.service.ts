@@ -2,10 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
-import { User } from '../users/entities/user.entity';
-
-// Define a specific type for a user object without the password hash
-type ValidatedUser = Omit<User, 'passwordHash'>;
+import { ValidatedUser } from './interfaces/validated-user.type';
 
 @Injectable()
 export class AuthService {

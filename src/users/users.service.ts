@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import * as bcrypt from 'bcrypt';
 import { RegisterUserDto } from './dtos/register-user.dto';
+import { ValidatedUser } from 'src/auth/interfaces/validated-user.type';
 
 @Injectable()
 export class UsersService {
@@ -36,5 +37,20 @@ export class UsersService {
     });
 
     return this.usersRepository.save(newUser);
+  }
+
+  async findProfileById(id: string): Promise<ValidatedUser | null> {
+    return this.usersRepository.findOne({
+      where: { id },
+      // Explicitly select all required profile fields EXCEPT the passwordHash
+      select: [
+        'id',
+        'username',
+        'bio',
+        'profilePictureUrl',
+        'reputationScore',
+        'createdAt',
+      ],
+    });
   }
 }

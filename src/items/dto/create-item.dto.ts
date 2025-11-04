@@ -25,9 +25,6 @@ export class CreateItemDto {
   @MinLength(5)
   description: string;
 
-  // The ownerId is mandatory for the database but injected by the controller, not the client.
-  ownerId: string;
-
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0.01)
   estimatedValue: number;
