@@ -7,7 +7,6 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Membership } from './membership.entity';
-import { Rule } from './rule.entity';
 import type { Point } from 'geojson';
 
 @Entity('circles')
@@ -39,11 +38,10 @@ export class Circle {
   @CreateDateColumn()
   createdAt: Date;
 
+  @Column({ type: 'varchar', length: 7, default: '#3498DB' }) // 7 chars for "#RRGGBB"
+  color: string;
+
   // A circle can have many members
   @OneToMany(() => Membership, (membership) => membership.circle)
   memberships: Membership[];
-
-  // A circle can have many rules
-  @OneToMany(() => Rule, (rule) => rule.circle, { cascade: true })
-  rules: Rule[];
 }

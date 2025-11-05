@@ -41,6 +41,7 @@ import { UploadsModule } from './uploads/uploads.module';
     TradesModule,
     AuthModule,
     UploadsModule,
+    CirclesModule,
   ],
   controllers: [],
   providers: [],
