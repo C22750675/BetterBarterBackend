@@ -3,7 +3,6 @@ import {
   IsString,
   IsNumber,
   IsOptional,
-  IsUrl,
   Min,
   IsInt,
   Matches,
@@ -30,7 +29,7 @@ export class CreateItemDto {
   estimatedValue: number;
 
   @IsOptional()
-  @IsUrl()
+  @IsString()
   imageUrl?: string;
 
   @IsOptional()

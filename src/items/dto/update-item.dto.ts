@@ -2,7 +2,6 @@ import {
   IsString,
   IsNumber,
   IsOptional,
-  IsUrl,
   Min,
   IsInt,
   Matches,
@@ -30,7 +29,7 @@ export class UpdateItemDto {
   estimatedValue?: number;
 
   @IsOptional()
-  @IsUrl()
+  @IsString()
   imageUrl?: string;
 
   @IsOptional()
