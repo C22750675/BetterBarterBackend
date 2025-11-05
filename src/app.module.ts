@@ -6,6 +6,7 @@ import { ItemsModule } from './items/items.module';
 import { CirclesModule } from './circles/circles.module';
 import { TradesModule } from './trades/trades.module';
 import { AuthModule } from './auth/auth.module';
+import { UploadsModule } from './uploads/uploads.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { AuthModule } from './auth/auth.module';
     CirclesModule,
     TradesModule,
     AuthModule,
+    UploadsModule,
   ],
   controllers: [],
   providers: [],

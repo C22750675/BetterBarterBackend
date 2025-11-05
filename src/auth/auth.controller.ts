@@ -8,6 +8,7 @@ import {
   HttpCode,
   HttpStatus,
   UnauthorizedException,
+  Patch,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
@@ -16,6 +17,7 @@ import { JwtAuthGuard } from './jwt-auth.guard';
 import { UserPayloadDto } from './dto/user-payload.dto';
 import { GetUser } from './decorators/get-user.decorator';
 import { LoginUserDto } from 'src/users/dtos/login-user.dto';
+import { UpdateProfileDto } from 'src/users/dtos/update-profile.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -58,5 +60,32 @@ export class AuthController {
     }
 
     return fullUser;
+  }
+
+  // PATCH /auth/profile
+  // This route is for updating the user's bio and profile picture URL
+  @UseGuards(JwtAuthGuard)
+  @Patch('profile')
+  async updateProfile(
+    @GetUser() user: UserPayloadDto, // Get the full UserPayloadDto object
+    @Body() profile: UpdateProfileDto,
+  ) {
+    // Pass the 'id' property from the user object to the service
+    const existingUser = await this.usersService.findProfileById(user.id);
+
+    if (!existingUser) {
+      throw new UnauthorizedException('Profile not found.');
+    }
+
+    // Update only the fields that are provided in the DTO
+    if (profile.bio !== undefined) {
+      existingUser.bio = profile.bio;
+    }
+    if (profile.profilePictureUrl !== undefined) {
+      existingUser.profilePictureUrl = profile.profilePictureUrl;
+    }
+
+    // Save the updated user entity
+    return this.usersService.updateUserProfile(existingUser);
   }
 }

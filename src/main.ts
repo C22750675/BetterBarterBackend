@@ -1,17 +1,22 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { NestExpressApplication } from '@nestjs/platform-express';
+import { join } from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
   app.setGlobalPrefix('api');
 
-  // Enable global validation pipe
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
+    prefix: '/api/uploads/',
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // Strips away properties that do not have any decorators
-      forbidNonWhitelisted: true, // Throws an error if non-whitelisted values are provided
+      whitelist: true,
+      forbidNonWhitelisted: true,
     }),
   );
 

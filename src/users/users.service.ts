@@ -53,4 +53,8 @@ export class UsersService {
       ],
     });
   }
+
+  async updateUserProfile(user: ValidatedUser): Promise<ValidatedUser> {
+    return this.usersRepository.save(user);
+  }
 }
