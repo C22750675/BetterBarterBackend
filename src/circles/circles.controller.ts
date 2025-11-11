@@ -19,17 +19,21 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '../users/entities/user.entity';
 import { FindNearbyDto } from './dtos/find-nearby.dto';
 import { Point } from 'typeorm';
+import { ItemsService } from '../items/items.service';
 
 @Controller('circles')
 @UseGuards(JwtAuthGuard) // Protect all routes in this controller
 export class CirclesController {
-  constructor(private readonly circlesService: CirclesService) {}
+  constructor(
+    private readonly circlesService: CirclesService,
+    private readonly itemsService: ItemsService,
+  ) {}
 
   /**
    * Creates a new circle. The creator is automatically made an admin.
    */
   @Post()
-  @UseInterceptors(ClassSerializerInterceptor) // --- ADDED ---
+  @UseInterceptors(ClassSerializerInterceptor)
   async create(
     @Body() createCircleDto: CreateCircleDto,
     @GetUser() user: User,

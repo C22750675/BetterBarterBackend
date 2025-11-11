@@ -5,13 +5,12 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
-  OneToOne,
   OneToMany,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
-import { Dispute } from './dispute.entity';
-import { Rating } from './rating.entity';
-import { Message } from './message.entity';
+import { Item } from 'src/items/entities/item.entity';
+import { Circle } from 'src/circles/entities/circle.entity';
+import { TradeApplication } from './trade-application.entity';
 
 export enum TradeStatus {
   PENDING = 'pending',
@@ -31,7 +30,7 @@ export class Trade {
     enum: TradeStatus,
     default: TradeStatus.PENDING,
   })
-  status: TradeStatus;
+  status: TradeStatus; // This is the status of the *main* trade listing
 
   @CreateDateColumn()
   creationDate: Date;
@@ -39,29 +38,43 @@ export class Trade {
   @Column({ type: 'timestamp', nullable: true })
   completionDate: Date;
 
+  @Column({ type: 'text', nullable: true })
+  description: string;
+
   @ManyToOne(() => User, (user) => user.proposedTrades, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'proposerId' })
-  proposer: User;
+  proposer: User; // The admin who created the listing
 
   @Column()
   proposerId: string;
 
-  @ManyToOne(() => User, (user) => user.receivedTrades, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.receivedTrades, {
+    onDelete: 'CASCADE',
+    nullable: true,
+  })
   @JoinColumn({ name: 'recipientId' })
-  recipient: User;
+  recipient: User; // The applicant who was *accepted*
 
-  @Column()
+  @Column({ nullable: true })
   recipientId: string;
 
-  // A trade can have a dispute
-  @OneToOne(() => Dispute, (dispute) => dispute.trade)
-  dispute: Dispute;
+  @Column()
+  offeredItemQuantity: number;
 
-  // A trade can have ratings (one from each party)
-  @OneToMany(() => Rating, (rating) => rating.trade)
-  ratings: Rating[];
+  @ManyToOne(() => Item, (item) => item.trades, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'offeredItemId' })
+  offeredItem: Item;
 
-  // A trade has a message thread
-  @OneToMany(() => Message, (message) => message.trade, { cascade: true })
-  messages: Message[];
+  @Column({ nullable: true })
+  offeredItemId: string;
+
+  @ManyToOne(() => Circle, (circle) => circle.trades, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'circleId' })
+  circle: Circle;
+
+  @Column()
+  circleId: string;
+
+  @OneToMany(() => TradeApplication, (application) => application.trade)
+  applications: TradeApplication[];
 }

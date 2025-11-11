@@ -10,6 +10,7 @@ import { Membership } from './membership.entity';
 import { Item } from 'src/items/entities/item.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Expose } from 'class-transformer';
+import { Trade } from 'src/trades/entities/trade.entity';
 
 @Entity()
 export class Circle {
@@ -50,6 +51,9 @@ export class Circle {
   // A circle can have many items posted to it
   @OneToMany(() => Item, (item) => item.circle)
   items: Item[];
+
+  @OneToMany(() => Trade, (trade) => trade.circle)
+  trades: Trade[];
 
   @Expose() // Make this available in the JSON response
   get admins(): User[] | undefined {

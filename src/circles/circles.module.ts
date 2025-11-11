@@ -4,9 +4,10 @@ import { CirclesService } from './circles.service';
 import { CirclesController } from './circles.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Membership } from './entities/membership.entity';
+import { ItemsModule } from 'src/items/items.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Circle, Membership])],
+  imports: [TypeOrmModule.forFeature([Circle, Membership]), ItemsModule],
   controllers: [CirclesController],
   providers: [CirclesService],
   exports: [CirclesService],

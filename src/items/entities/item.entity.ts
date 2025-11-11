@@ -6,10 +6,12 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Category } from './category.entity';
 import { Circle } from '../../circles/entities/circle.entity';
+import { Trade } from '../../trades/entities/trade.entity';
 
 @Entity()
 export class Item {
@@ -72,4 +74,7 @@ export class Item {
 
   @Column({ nullable: true })
   circleId: string;
+
+  @OneToMany(() => Trade, (trade) => trade.offeredItem)
+  trades: Trade[];
 }

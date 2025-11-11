@@ -57,6 +57,15 @@ export class ItemsService {
     });
   }
 
+  async findItemsByCircleId(circleId: string): Promise<Item[]> {
+    return this.itemsRepository.find({
+      where: { circleId },
+      // Eager load the owner and category for display in the app
+      relations: ['owner', 'category'],
+      order: { createdAt: 'DESC' }, // Show newest items first
+    });
+  }
+
   /**
    * Updates an existing item.
    * @param id The UUID of the item to update.
