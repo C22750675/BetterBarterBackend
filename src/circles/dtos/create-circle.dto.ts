@@ -26,6 +26,10 @@ export class CreateCircleDto {
   @IsNotEmpty()
   name: string;
 
+  @IsString()
+  @IsNotEmpty()
+  description: string;
+
   @ValidateNested()
   @Type(() => OriginPointDto)
   origin: OriginPointDto;

@@ -1,47 +1,65 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  Index,
+  Entity,
   OneToMany,
+  PrimaryGeneratedColumn,
 } from 'typeorm';
-import { Membership } from './membership.entity';
 import type { Point } from 'geojson';
+import { Membership } from './membership.entity';
+import { Item } from 'src/items/entities/item.entity';
+import { User } from 'src/users/entities/user.entity';
+import { Expose } from 'class-transformer';
 
-@Entity('circles')
+@Entity()
 export class Circle {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 100 })
+  @Column({ unique: true })
   name: string;
 
-  // PostGIS specific column for geospatial data
-  @Index({ spatial: true })
+  @Column({ type: 'text', nullable: true })
+  description: string;
+
   @Column({
     type: 'geography',
     spatialFeatureType: 'Point',
-    srid: 4326, // Standard GPS coordinates SRID
+    srid: 4326,
   })
   origin: Point;
 
-  @Column({ type: 'int' }) // Radius in meters
-  radius: number;
+  @Column()
+  radius: number; // in meters
 
-  @Column({ type: 'float', default: 5.0 })
+  @Column({ default: 5.0 })
   reputationScore: number;
 
-  @Column({ type: 'int', default: 0 })
+  @Column({ default: 0 })
   minimumRepThreshold: number;
+
+  @Column({ type: 'varchar', length: 7, default: '#3498DB' })
+  color: string;
 
   @CreateDateColumn()
   createdAt: Date;
 
-  @Column({ type: 'varchar', length: 7, default: '#3498DB' }) // 7 chars for "#RRGGBB"
-  color: string;
-
-  // A circle can have many members
   @OneToMany(() => Membership, (membership) => membership.circle)
   memberships: Membership[];
+
+  // A circle can have many items posted to it
+  @OneToMany(() => Item, (item) => item.circle)
+  items: Item[];
+
+  @Expose() // Make this available in the JSON response
+  get admins(): User[] | undefined {
+    // If memberships haven't been loaded, return undefined
+    if (!this.memberships) {
+      return undefined;
+    }
+    // Filter memberships for 'admin' role and return the associated user
+    return this.memberships
+      .filter((membership) => membership.isAdmin === true)
+      .map((membership) => membership.user);
+  }
 }

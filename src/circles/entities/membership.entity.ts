@@ -10,7 +10,9 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { Circle } from './circle.entity';
 
-@Entity('memberships')
+// We no longer need MembershipRole
+
+@Entity()
 @Unique(['userId', 'circleId']) // A user can only join a circle once
 export class Membership {
   @PrimaryGeneratedColumn('uuid')

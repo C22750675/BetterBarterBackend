@@ -12,7 +12,7 @@ import { Trade } from '../../trades/entities/trade.entity';
 import { Rating } from '../../trades/entities/rating.entity';
 import { Message } from '../../trades/entities/message.entity';
 
-@Entity('users')
+@Entity()
 export class User {
   @PrimaryGeneratedColumn('uuid')
   id: string;

@@ -28,7 +28,8 @@ export class CirclesService {
    * making the creator the first admin.
    */
   async create(createCircleDto: CreateCircleDto, user: User) {
-    const { name, origin, radius, color } = createCircleDto;
+    // --- MODIFIED: Added 'description' ---
+    const { name, origin, radius, color, description } = createCircleDto;
 
     // Use a transaction to ensure all or nothing
     const queryRunner = this.dataSource.createQueryRunner();
@@ -42,6 +43,7 @@ export class CirclesService {
         origin,
         radius,
         color,
+        description,
       });
       const newCircle = await queryRunner.manager.save(circle);
 
@@ -56,10 +58,10 @@ export class CirclesService {
       // Commit the transaction
       await queryRunner.commitTransaction();
 
-      // Return the complete circle object
-      // (excluding the 'memberships' property which could be huge)
-      const { ...result } = newCircle;
-      return result;
+      // --- MODIFIED: Return the full newCircle object ---
+      // We'll add the new membership manually so the 'admins' getter works
+      newCircle.memberships = [membership];
+      return newCircle;
     } catch (err) {
       // Rollback on error
       await queryRunner.rollbackTransaction();
@@ -83,12 +85,18 @@ export class CirclesService {
    * Finds all circles a user is a member of, including member count.
    */
   async findCirclesByUserId(userId: string): Promise<Circle[]> {
-    return this.circleRepository
-      .createQueryBuilder('circle')
-      .leftJoin('circle.memberships', 'membership')
-      .where('membership.userId = :userId', { userId })
-      .loadRelationCountAndMap('circle.memberCount', 'circle.memberships')
-      .getMany();
+    return (
+      this.circleRepository
+        .createQueryBuilder('circle')
+        .leftJoin('circle.memberships', 'membership')
+        .where('membership.userId = :userId', { userId })
+        .loadRelationCountAndMap('circle.memberCount', 'circle.memberships')
+        // --- ADDED THESE LINES to load admin data ---
+        .leftJoinAndSelect('circle.memberships', 'all_memberships')
+        .leftJoinAndSelect('all_memberships.user', 'user')
+        // --- END ADDITION ---
+        .getMany()
+    );
   }
 
   /**
@@ -110,6 +118,8 @@ export class CirclesService {
         },
       )
       .loadRelationCountAndMap('circle.memberCount', 'circle.memberships')
+      .leftJoinAndSelect('circle.memberships', 'all_memberships')
+      .leftJoinAndSelect('all_memberships.user', 'user')
       .getMany();
   }
 
@@ -122,6 +132,8 @@ export class CirclesService {
       .createQueryBuilder('circle')
       .where('circle.id = :id', { id })
       .loadRelationCountAndMap('circle.memberCount', 'circle.memberships')
+      .leftJoinAndSelect('circle.memberships', 'all_memberships')
+      .leftJoinAndSelect('all_memberships.user', 'user')
       .getOne();
 
     if (!circle) {

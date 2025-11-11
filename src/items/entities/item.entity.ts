@@ -9,8 +9,9 @@ import {
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Category } from './category.entity';
+import { Circle } from '../../circles/entities/circle.entity';
 
-@Entity('items')
+@Entity()
 export class Item {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -60,4 +61,15 @@ export class Item {
 
   @Column({ nullable: true })
   categoryId: string;
+
+  // Many items can be posted to one circle
+  @ManyToOne(() => Circle, (circle) => circle.items, {
+    nullable: true, // An item can be in a user's inventory but not posted
+    onDelete: 'SET NULL', // If a circle is deleted, the item becomes 'un-posted'
+  })
+  @JoinColumn({ name: 'circleId' })
+  circle: Circle;
+
+  @Column({ nullable: true })
+  circleId: string;
 }

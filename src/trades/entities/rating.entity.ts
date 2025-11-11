@@ -10,7 +10,7 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { Trade } from './trade.entity';
 
-@Entity('ratings')
+@Entity()
 @Unique(['raterId', 'tradeId']) // A user can only rate a specific trade once
 export class Rating {
   @PrimaryGeneratedColumn('uuid')

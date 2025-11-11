@@ -21,7 +21,7 @@ export enum TradeStatus {
   DISPUTED = 'disputed',
 }
 
-@Entity('trades')
+@Entity()
 export class Trade {
   @PrimaryGeneratedColumn('uuid')
   id: string;

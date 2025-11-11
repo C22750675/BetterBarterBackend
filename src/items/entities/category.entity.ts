@@ -8,7 +8,7 @@ import {
 } from 'typeorm';
 import { Item } from './item.entity';
 
-@Entity('categories')
+@Entity()
 export class Category {
   @PrimaryGeneratedColumn('uuid')
   id: string;

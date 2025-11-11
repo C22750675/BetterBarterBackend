@@ -13,7 +13,7 @@ export enum DisputeStatus {
   RESOLVED = 'resolved',
 }
 
-@Entity('disputes')
+@Entity()
 export class Dispute {
   @PrimaryGeneratedColumn('uuid')
   id: string;

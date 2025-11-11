@@ -9,6 +9,8 @@ import {
   UseGuards,
   Query,
   ParseUUIDPipe,
+  ClassSerializerInterceptor,
+  UseInterceptors,
 } from '@nestjs/common';
 import { CirclesService } from './circles.service';
 import { CreateCircleDto } from './dtos/create-circle.dto';
@@ -27,6 +29,7 @@ export class CirclesController {
    * Creates a new circle. The creator is automatically made an admin.
    */
   @Post()
+  @UseInterceptors(ClassSerializerInterceptor) // --- ADDED ---
   async create(
     @Body() createCircleDto: CreateCircleDto,
     @GetUser() user: User,
@@ -39,6 +42,7 @@ export class CirclesController {
    * Fetches all circles the authenticated user is a member of.
    */
   @Get('my-circles')
+  @UseInterceptors(ClassSerializerInterceptor) // --- ADDED ---
   async findMyCircles(@GetUser() user: User) {
     // We just pass the user ID to the service
     return this.circlesService.findCirclesByUserId(user.id);
@@ -50,6 +54,7 @@ export class CirclesController {
    * e.g., /api/circles/near?lat=53.34&lon=-6.26&radius=10000
    */
   @Get('near')
+  @UseInterceptors(ClassSerializerInterceptor) // --- ADDED ---
   async findNearby(@Query() findNearbyDto: FindNearbyDto) {
     const { lat, lon, radius } = findNearbyDto;
     const origin: Point = {
@@ -63,6 +68,7 @@ export class CirclesController {
    * (For Map Screen)
    * Gets the public details of a single circle by its ID.
    */
+  @UseInterceptors(ClassSerializerInterceptor)
   @Get(':id')
   async findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.circlesService.findOneWithDetails(id);

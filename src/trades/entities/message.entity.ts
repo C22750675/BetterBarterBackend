@@ -9,7 +9,7 @@ import {
 import { User } from '../../users/entities/user.entity';
 import { Trade } from './trade.entity';
 
-@Entity('messages')
+@Entity()
 export class Message {
   @PrimaryGeneratedColumn('uuid')
   id: string;
