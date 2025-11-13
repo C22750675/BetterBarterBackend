@@ -24,10 +24,7 @@ import { ItemsService } from '../items/items.service';
 @Controller('circles')
 @UseGuards(JwtAuthGuard) // Protect all routes in this controller
 export class CirclesController {
-  constructor(
-    private readonly circlesService: CirclesService,
-    private readonly itemsService: ItemsService,
-  ) {}
+  constructor(private readonly circlesService: CirclesService) {}
 
   /**
    * Creates a new circle. The creator is automatically made an admin.
