@@ -19,7 +19,6 @@ import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '../users/entities/user.entity';
 import { FindNearbyDto } from './dtos/find-nearby.dto';
 import { Point } from 'typeorm';
-import { ItemsService } from '../items/items.service';
 
 @Controller('circles')
 @UseGuards(JwtAuthGuard) // Protect all routes in this controller
@@ -43,7 +42,7 @@ export class CirclesController {
    * Fetches all circles the authenticated user is a member of.
    */
   @Get('my-circles')
-  @UseInterceptors(ClassSerializerInterceptor) // --- ADDED ---
+  @UseInterceptors(ClassSerializerInterceptor)
   async findMyCircles(@GetUser() user: User) {
     // We just pass the user ID to the service
     return this.circlesService.findCirclesByUserId(user.id);
@@ -55,7 +54,7 @@ export class CirclesController {
    * e.g., /api/circles/near?lat=53.34&lon=-6.26&radius=10000
    */
   @Get('near')
-  @UseInterceptors(ClassSerializerInterceptor) // --- ADDED ---
+  @UseInterceptors(ClassSerializerInterceptor)
   async findNearby(@Query() findNearbyDto: FindNearbyDto) {
     const { lat, lon, radius } = findNearbyDto;
     const origin: Point = {
