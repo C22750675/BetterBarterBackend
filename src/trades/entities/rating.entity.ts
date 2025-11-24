@@ -26,7 +26,7 @@ export class Rating {
   createdAt: Date;
 
   // The user who GAVE the rating
-  @ManyToOne(() => User, (user) => user.givenRatings, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'raterId' })
   rater: User;
 
@@ -34,9 +34,7 @@ export class Rating {
   raterId: string;
 
   // The user who RECEIVED the rating
-  @ManyToOne(() => User, (user) => user.receivedRatings, {
-    onDelete: 'CASCADE',
-  })
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'rateeId' })
   ratee: User;
 
@@ -44,7 +42,7 @@ export class Rating {
   rateeId: string;
 
   // The trade this rating is for
-  @ManyToOne(() => Trade, (trade) => trade.ratings, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Trade, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'tradeId' })
   trade: Trade;
 

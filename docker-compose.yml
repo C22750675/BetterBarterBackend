@@ -7,14 +7,14 @@ services:
     
     container_name: betterbarter-prototype-db
     
-    # Docker Compose will automatically read these values from the .env file
+    # Docker Compose will automatically read values from the .env file
     # in the same directory
     environment:
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
       
-    # Map the container's port 5432 to the host machine's port 5432.
+    # Map the container's port 5432 to the host machine's port 5432
     ports:
       - "5432:5432"
       

@@ -35,7 +35,7 @@ export class CreateItemDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  stock?: number;
+  stock: number;
 
   @IsOptional()
   @IsString()
@@ -55,5 +55,5 @@ export class CreateItemDto {
 
   @IsOptional()
   @IsUUID()
-  categoryId?: string;
+  categoryId: string;
 }

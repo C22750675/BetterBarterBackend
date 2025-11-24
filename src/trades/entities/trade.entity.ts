@@ -6,11 +6,13 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
+  OneToOne,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 import { Item } from 'src/items/entities/item.entity';
 import { Circle } from 'src/circles/entities/circle.entity';
 import { TradeApplication } from './trade-application.entity';
+import { Dispute } from './dispute.entity';
 
 export enum TradeStatus {
   PENDING = 'pending',
@@ -77,4 +79,7 @@ export class Trade {
 
   @OneToMany(() => TradeApplication, (application) => application.trade)
   applications: TradeApplication[];
+
+  @OneToOne(() => Dispute, (dispute) => dispute.trade)
+  dispute: Dispute;
 }

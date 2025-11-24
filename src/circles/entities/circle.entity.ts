@@ -56,10 +56,10 @@ export class Circle {
   trades: Trade[];
 
   @Expose() // Make this available in the JSON response
-  get admins(): User[] | undefined {
-    // If memberships haven't been loaded, return undefined
+  get admins(): User[] | null {
+    // If memberships haven't been loaded, return null
     if (!this.memberships) {
-      return undefined;
+      return null;
     }
     // Filter memberships for 'admin' role and return the associated user
     return this.memberships

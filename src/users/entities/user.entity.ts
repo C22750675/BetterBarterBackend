@@ -8,7 +8,7 @@ import {
 import { Item } from '../../items/entities/item.entity';
 import { Membership } from 'src/circles/entities/membership.entity';
 import { Trade } from 'src/trades/entities/trade.entity';
-import { TradeApplication } from 'src/trades/entities/trade-application.entity'; // <-- IMPORT NEW ENTITY
+import { TradeApplication } from 'src/trades/entities/trade-application.entity';
 
 @Entity()
 export class User {

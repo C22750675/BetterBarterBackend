@@ -24,7 +24,7 @@ export class Message {
   timestamp: Date;
 
   // The user who sent the message
-  @ManyToOne(() => User, (user) => user.sentMessages, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'senderId' })
   sender: User;
 
@@ -32,7 +32,7 @@ export class Message {
   senderId: string;
 
   // The trade this message belongs to
-  @ManyToOne(() => Trade, (trade) => trade.messages, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Trade, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'tradeId' })
   trade: Trade;
 
