@@ -5,9 +5,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Trade } from './entities/trade.entity';
 import { Item } from 'src/items/entities/item.entity';
 import { Circle } from 'src/circles/entities/circle.entity';
+import { Rating } from './entities/rating.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Trade, Item, Circle])],
+  imports: [TypeOrmModule.forFeature([Trade, Item, Circle, Rating])],
   controllers: [TradesController],
   providers: [TradesService],
 })

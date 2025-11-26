@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -8,8 +9,9 @@ import { Item } from 'src/items/entities/item.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Repository } from 'typeorm';
 import { CreateTradeDto } from './dto/create-trade.dto';
-import { Trade } from './entities/trade.entity';
-import { TradeStatus } from './entities/trade.entity';
+import { Trade, TradeStatus } from './entities/trade.entity';
+import { CreateRatingDto } from './dto/create-rating.dto';
+import { Rating } from './entities/rating.entity';
 
 @Injectable()
 export class TradesService {
@@ -18,30 +20,23 @@ export class TradesService {
     private readonly tradeRepository: Repository<Trade>,
     @InjectRepository(Item)
     private readonly itemRepository: Repository<Item>,
+    @InjectRepository(Rating)
+    private readonly ratingRepository: Repository<Rating>,
   ) {}
 
   async create(createTradeDto: CreateTradeDto, user: User) {
     const { itemId, circleId, quantity, description } = createTradeDto;
 
-    // 1. Find the item being offered
     const item = await this.itemRepository.findOneBy({ id: itemId });
-    if (!item) {
-      throw new NotFoundException(`Item with ID ${itemId} not found`);
-    }
+    if (!item) throw new NotFoundException(`Item not found`);
 
-    // 2. Security Check: Ensure the user owns this item
     if (item.ownerId !== user.id) {
       throw new ForbiddenException('You do not own this item');
     }
-
-    // 3. Stock Check: Ensure they have enough stock
     if (quantity > item.stock) {
-      throw new ForbiddenException(
-        `Quantity (${quantity}) exceeds available stock (${item.stock})`,
-      );
+      throw new ForbiddenException(`Quantity exceeds stock`);
     }
 
-    // 4. Create the new trade proposal
     const trade = this.tradeRepository.create({
       proposer: user,
       circleId,
@@ -54,23 +49,78 @@ export class TradesService {
     return this.tradeRepository.save(trade);
   }
 
-  /**
-   * (For Android App)
-   * Finds all pending trades for a specific circle.
-   */
   async findByCircleId(circleId: string): Promise<Trade[]> {
     return this.tradeRepository.find({
-      where: {
-        circleId,
-        status: TradeStatus.PENDING, // Only show active, open trades
-      },
-      // Eager load all the data the app will need
-      relations: [
-        'proposer',
-        'offeredItem',
-        'offeredItem.owner', // In case we need it, though proposer is the owner
-      ],
-      order: { creationDate: 'DESC' }, // Newest first
+      where: { circleId, status: TradeStatus.PENDING },
+      relations: ['proposer', 'offeredItem'],
+      order: { creationDate: 'DESC' },
     });
+  }
+
+  async findMyTrades(userId: string): Promise<Trade[]> {
+    return this.tradeRepository.find({
+      where: [{ proposerId: userId }, { recipientId: userId }],
+      relations: ['proposer', 'recipient', 'offeredItem'],
+      order: { creationDate: 'DESC' },
+    });
+  }
+
+  async updateStatus(tradeId: string, status: TradeStatus, userId: string) {
+    const trade = await this.tradeRepository.findOne({
+      where: { id: tradeId },
+      relations: ['proposer', 'offeredItem'],
+    });
+
+    if (!trade) throw new NotFoundException('Trade not found');
+
+    // Only the recipient (or item owner if recipient not set) can ACCEPT
+    // Only the participants can COMPLETE.
+
+    // For MVP simplicity:
+    if (status === TradeStatus.ACCEPTED) {
+      // Only allow if pending
+      if (trade.status !== TradeStatus.PENDING)
+        throw new BadRequestException('Trade not pending');
+      trade.recipientId = userId; // Lock it to the person accepting
+    }
+
+    trade.status = status;
+    if (status === TradeStatus.COMPLETED) {
+      trade.completionDate = new Date();
+      // TODO: Decrease stock logic would go here
+    }
+
+    return this.tradeRepository.save(trade);
+  }
+
+  async rateTrade(tradeId: string, dto: CreateRatingDto, rater: User) {
+    const trade = await this.tradeRepository.findOne({
+      where: { id: tradeId },
+      relations: ['proposer', 'recipient'],
+    });
+
+    if (!trade) throw new NotFoundException('Trade not found');
+    if (trade.status !== TradeStatus.COMPLETED)
+      throw new BadRequestException('Trade not complete');
+
+    // Determine who is being rated
+    let rateeId: string;
+    if (rater.id === trade.proposerId) {
+      rateeId = trade.recipientId;
+    } else if (rater.id === trade.recipientId) {
+      rateeId = trade.proposerId;
+    } else {
+      throw new ForbiddenException('You were not part of this trade');
+    }
+
+    const rating = this.ratingRepository.create({
+      score: dto.score,
+      comment: dto.comment,
+      rater: rater,
+      rateeId: rateeId,
+      trade: trade,
+    });
+
+    return this.ratingRepository.save(rating);
   }
 }
