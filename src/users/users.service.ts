@@ -13,9 +13,13 @@ export class UsersService {
     private usersRepository: Repository<User>,
   ) {}
 
-  // Find a user by their username
+  // Find a user by their username, explicitly selecting the passwordHash
   async findOneByUsername(username: string): Promise<User | null> {
-    return this.usersRepository.findOneBy({ username });
+    return this.usersRepository
+      .createQueryBuilder('user')
+      .addSelect('user.passwordHash') // Select the hidden column
+      .where('user.username = :username', { username })
+      .getOne();
   }
 
   // Register a new user
