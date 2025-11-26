@@ -6,9 +6,12 @@ import { Trade } from './entities/trade.entity';
 import { Item } from 'src/items/entities/item.entity';
 import { Circle } from 'src/circles/entities/circle.entity';
 import { Rating } from './entities/rating.entity';
+import { TradeApplication } from './entities/trade-application.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Trade, Item, Circle, Rating])],
+  imports: [
+    TypeOrmModule.forFeature([Trade, Item, Circle, Rating, TradeApplication]),
+  ],
   controllers: [TradesController],
   providers: [TradesService],
 })

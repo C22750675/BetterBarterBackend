@@ -32,7 +32,7 @@ export class Trade {
     enum: TradeStatus,
     default: TradeStatus.PENDING,
   })
-  status: TradeStatus; // This is the status of the *main* trade listing
+  status: TradeStatus;
 
   @CreateDateColumn()
   creationDate: Date;
@@ -45,7 +45,7 @@ export class Trade {
 
   @ManyToOne(() => User, (user) => user.proposedTrades, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'proposerId' })
-  proposer: User; // The admin who created the listing
+  proposer: User;
 
   @Column()
   proposerId: string;
@@ -55,7 +55,7 @@ export class Trade {
     nullable: true,
   })
   @JoinColumn({ name: 'recipientId' })
-  recipient: User; // The applicant who was *accepted*
+  recipient: User;
 
   @Column({ nullable: true })
   recipientId: string;
@@ -82,4 +82,7 @@ export class Trade {
 
   @OneToOne(() => Dispute, (dispute) => dispute.trade)
   dispute: Dispute;
+
+  // Non-database property to hold the current user's application status
+  myApplication?: TradeApplication;
 }

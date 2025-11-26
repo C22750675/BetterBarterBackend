@@ -17,6 +17,7 @@ import { CreateTradeDto } from './dto/create-trade.dto';
 import { TradesService } from './trades.service';
 import { CreateRatingDto } from './dto/create-rating.dto';
 import { UpdateTradeStatusDto } from './dto/update-trade-status.dto';
+import { CreateTradeApplicationDto } from './dto/create-trade-application.dto';
 
 @Controller('trades')
 @UseGuards(JwtAuthGuard)
@@ -30,8 +31,11 @@ export class TradesController {
   }
 
   @Get('circle/:circleId')
-  async findByCircle(@Param('circleId', ParseUUIDPipe) circleId: string) {
-    return this.tradesService.findByCircleId(circleId);
+  async findByCircle(
+    @Param('circleId', ParseUUIDPipe) circleId: string,
+    @GetUser() user: User, // Inject user
+  ) {
+    return this.tradesService.findByCircleId(circleId, user.id);
   }
 
   // Get trades user is involved in (either as proposer or recipient/item owner)
@@ -42,8 +46,11 @@ export class TradesController {
 
   // Get Single Trade by ID
   @Get(':id')
-  async findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.tradesService.findOne(id);
+  async findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @GetUser() user: User, // Inject user
+  ) {
+    return this.tradesService.findOne(id, user.id);
   }
 
   // Accept, Reject, or Complete a trade
@@ -64,5 +71,22 @@ export class TradesController {
     @GetUser() user: User,
   ) {
     return this.tradesService.rateTrade(id, createRatingDto, user);
+  }
+
+  @Post(':id/apply')
+  async applyForTrade(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CreateTradeApplicationDto,
+    @GetUser() user: User,
+  ) {
+    return this.tradesService.applyForTrade(id, dto, user);
+  }
+
+  @Get(':id/applications')
+  async getApplications(
+    @Param('id', ParseUUIDPipe) id: string,
+    @GetUser() user: User,
+  ) {
+    return this.tradesService.getApplicationsForTrade(id, user);
   }
 }

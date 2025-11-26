@@ -8,6 +8,7 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Trade } from './trade.entity';
+import { Item } from '../../items/entities/item.entity';
 
 export enum TradeApplicationStatus {
   PENDING = 'pending',
@@ -38,8 +39,18 @@ export class TradeApplication {
   @Column()
   tradeId: string;
 
+  @ManyToOne(() => Item, { onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'offeredItemId' })
+  offeredItem: Item;
+
+  @Column({ nullable: true })
+  offeredItemId: string;
+
+  @Column({ type: 'int', default: 1 })
+  offeredItemQuantity: number;
+
   @Column({ type: 'text', nullable: true })
-  message: string; // Applicant's message (e.g., "I have jam!")
+  message: string;
 
   @Column({
     type: 'enum',
