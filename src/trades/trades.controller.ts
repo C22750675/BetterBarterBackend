@@ -40,6 +40,12 @@ export class TradesController {
     return this.tradesService.findMyTrades(user.id);
   }
 
+  // Get Single Trade by ID
+  @Get(':id')
+  async findOne(@Param('id', ParseUUIDPipe) id: string) {
+    return this.tradesService.findOne(id);
+  }
+
   // Accept, Reject, or Complete a trade
   @Patch(':id/status')
   async updateStatus(

@@ -30,12 +30,10 @@ export class TradesService {
     const item = await this.itemRepository.findOneBy({ id: itemId });
     if (!item) throw new NotFoundException(`Item not found`);
 
-    if (item.ownerId !== user.id) {
+    if (item.ownerId !== user.id)
       throw new ForbiddenException('You do not own this item');
-    }
-    if (quantity > item.stock) {
+    if (quantity > item.stock)
       throw new ForbiddenException(`Quantity exceeds stock`);
-    }
 
     const trade = this.tradeRepository.create({
       proposer: user,
@@ -65,6 +63,16 @@ export class TradesService {
     });
   }
 
+  // Find One Trade
+  async findOne(tradeId: string): Promise<Trade> {
+    const trade = await this.tradeRepository.findOne({
+      where: { id: tradeId },
+      relations: ['proposer', 'offeredItem'], // Load items for details page
+    });
+    if (!trade) throw new NotFoundException('Trade not found');
+    return trade;
+  }
+
   async updateStatus(tradeId: string, status: TradeStatus, userId: string) {
     const trade = await this.tradeRepository.findOne({
       where: { id: tradeId },
@@ -73,21 +81,15 @@ export class TradesService {
 
     if (!trade) throw new NotFoundException('Trade not found');
 
-    // Only the recipient (or item owner if recipient not set) can ACCEPT
-    // Only the participants can COMPLETE.
-
-    // For MVP simplicity:
     if (status === TradeStatus.ACCEPTED) {
-      // Only allow if pending
       if (trade.status !== TradeStatus.PENDING)
         throw new BadRequestException('Trade not pending');
-      trade.recipientId = userId; // Lock it to the person accepting
+      trade.recipientId = userId;
     }
 
     trade.status = status;
     if (status === TradeStatus.COMPLETED) {
       trade.completionDate = new Date();
-      // TODO: Decrease stock logic would go here
     }
 
     return this.tradeRepository.save(trade);
@@ -103,7 +105,6 @@ export class TradesService {
     if (trade.status !== TradeStatus.COMPLETED)
       throw new BadRequestException('Trade not complete');
 
-    // Determine who is being rated
     let rateeId: string;
     if (rater.id === trade.proposerId) {
       rateeId = trade.recipientId;
