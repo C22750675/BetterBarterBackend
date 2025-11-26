@@ -44,24 +44,26 @@ export class CirclesController {
   @Get('my-circles')
   @UseInterceptors(ClassSerializerInterceptor)
   async findMyCircles(@GetUser() user: User) {
-    // We just pass the user ID to the service
     return this.circlesService.findCirclesByUserId(user.id);
   }
 
   /**
-   * (For Map Screen)
-   * Finds all circles within a geographic radius.
-   * e.g., /api/circles/near?lat=53.34&lon=-6.26&radius=10000
+   * (For Map Screen / Join List)
+   * Finds circles within a radius, EXCLUDING ones the user is already in.
    */
   @Get('near')
   @UseInterceptors(ClassSerializerInterceptor)
-  async findNearby(@Query() findNearbyDto: FindNearbyDto) {
+  async findNearby(
+    @Query() findNearbyDto: FindNearbyDto,
+    @GetUser() user: User, // Inject the user to get their ID for filtering
+  ) {
     const { lat, lon, radius } = findNearbyDto;
     const origin: Point = {
       type: 'Point',
       coordinates: [lon, lat],
     };
-    return this.circlesService.findNearby(origin, radius);
+    // Pass the user ID to the service
+    return this.circlesService.findNearby(origin, radius, user.id);
   }
 
   /**
@@ -74,10 +76,6 @@ export class CirclesController {
     return this.circlesService.findOneWithDetails(id);
   }
 
-  /**
-   * (Use Case: Join a Circle)
-   * Allows an authenticated user to join a circle.
-   */
   @Post(':id/join')
   async joinCircle(
     @Param('id', ParseUUIDPipe) circleId: string,
@@ -86,10 +84,6 @@ export class CirclesController {
     return this.circlesService.joinCircle(circleId, user);
   }
 
-  /**
-   * (Use Case: Leave a Circle)
-   * Allows an authenticated user to leave a circle.
-   */
   @Delete(':id/leave')
   async leaveCircle(
     @Param('id', ParseUUIDPipe) circleId: string,
@@ -98,24 +92,15 @@ export class CirclesController {
     return this.circlesService.leaveCircle(circleId, user.id);
   }
 
-  /**
-   * (Admin Use Case)
-   * Updates a circle's details. (Requires admin privileges)
-   * NOTE: The service will handle the authorization logic.
-   */
   @Patch(':id')
   async update(
     @Param('id', ParseUUIDPipe) circleId: string,
-    @Body() updateCircleDto: /* You'd create an UpdateCircleDto here */ any,
+    @Body() updateCircleDto: any,
     @GetUser() user: User,
   ) {
     return this.circlesService.update(circleId, updateCircleDto, user.id);
   }
 
-  /**
-   * (Admin Use Case)
-   * Deletes a circle. (Requires admin privileges)
-   */
   @Delete(':id')
   async remove(
     @Param('id', ParseUUIDPipe) circleId: string,

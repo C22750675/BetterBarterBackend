@@ -66,4 +66,7 @@ export class Circle {
       .filter((membership) => membership.isAdmin === true)
       .map((membership) => membership.user);
   }
+
+  @Expose()
+  isMember?: boolean;
 }

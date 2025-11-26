@@ -23,21 +23,14 @@ export class CirclesService {
     private readonly dataSource: DataSource,
   ) {}
 
-  /**
-   * Create a new circle,
-   * making the creator the first admin.
-   */
   async create(createCircleDto: CreateCircleDto, user: User) {
-    // --- MODIFIED: Added 'description' ---
     const { name, origin, radius, color, description } = createCircleDto;
 
-    // Use a transaction to ensure all or nothing
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      // Create the circle
       const circle = this.circleRepository.create({
         name,
         origin,
@@ -47,7 +40,6 @@ export class CirclesService {
       });
       const newCircle = await queryRunner.manager.save(circle);
 
-      // Create the membership and make the user an admin
       const membership = this.membershipRepository.create({
         user,
         circle: newCircle,
@@ -55,15 +47,11 @@ export class CirclesService {
       });
       await queryRunner.manager.save(membership);
 
-      // Commit the transaction
       await queryRunner.commitTransaction();
 
-      // --- MODIFIED: Return the full newCircle object ---
-      // We'll add the new membership manually so the 'admins' getter works
       newCircle.memberships = [membership];
       return newCircle;
     } catch (err) {
-      // Rollback on error
       await queryRunner.rollbackTransaction();
       const safeMessage =
         err instanceof Error
@@ -75,39 +63,34 @@ export class CirclesService {
         `Failed to create circle: ${safeMessage}`,
       );
     } finally {
-      // Always release the query runner
       await queryRunner.release();
     }
   }
 
-  /**
-   * (For Android App)
-   * Finds all circles a user is a member of, including member count.
-   */
   async findCirclesByUserId(userId: string): Promise<Circle[]> {
-    return (
-      this.circleRepository
-        .createQueryBuilder('circle')
-        .leftJoin('circle.memberships', 'membership')
-        .where('membership.userId = :userId', { userId })
-        .loadRelationCountAndMap('circle.memberCount', 'circle.memberships')
-        // --- ADDED THESE LINES to load admin data ---
-        .leftJoinAndSelect('circle.memberships', 'all_memberships')
-        .leftJoinAndSelect('all_memberships.user', 'user')
-        // --- END ADDITION ---
-        .getMany()
-    );
+    return this.circleRepository
+      .createQueryBuilder('circle')
+      .leftJoin('circle.memberships', 'membership')
+      .where('membership.userId = :userId', { userId })
+      .loadRelationCountAndMap('circle.memberCount', 'circle.memberships')
+      .leftJoinAndSelect('circle.memberships', 'all_memberships')
+      .leftJoinAndSelect('all_memberships.user', 'user')
+      .getMany();
   }
 
   /**
-   * (For Map Screen)
-   * Finds all circles within a given radius of an origin point.
-   * Uses PostGIS ST_DWithin for efficient geospatial querying.
+   * Finds circles within a radius.
+   * If userId is provided, it checks if the user is a member and adds 'isMember' property.
    */
-  async findNearby(origin: Point, radiusInMeters: number): Promise<Circle[]> {
+  async findNearby(
+    origin: Point,
+    radiusInMeters: number,
+    userId?: string,
+  ): Promise<any[]> {
+    // Return any[] or a DTO that extends Circle
     const [longitude, latitude] = origin.coordinates;
 
-    return this.circleRepository
+    const query = this.circleRepository
       .createQueryBuilder('circle')
       .where(
         `ST_DWithin(circle.origin, ST_MakePoint(:longitude, :latitude), :radius)`,
@@ -119,14 +102,27 @@ export class CirclesService {
       )
       .loadRelationCountAndMap('circle.memberCount', 'circle.memberships')
       .leftJoinAndSelect('circle.memberships', 'all_memberships')
-      .leftJoinAndSelect('all_memberships.user', 'user')
-      .getMany();
+      .leftJoinAndSelect('all_memberships.user', 'user');
+
+    const circles = await query.getMany();
+
+    if (userId) {
+      // Check membership for each circle
+      const userMemberships = await this.membershipRepository.find({
+        where: { userId },
+        select: ['circleId'],
+      });
+      const joinedCircleIds = new Set(userMemberships.map((m) => m.circleId));
+
+      return circles.map((circle) => ({
+        ...circle,
+        isMember: joinedCircleIds.has(circle.id),
+      }));
+    }
+
+    return circles.map((circle) => ({ ...circle, isMember: false }));
   }
 
-  /**
-   * (For Map Screen)
-   * Finds a single circle by ID and includes its member count.
-   */
   async findOneWithDetails(id: string): Promise<Circle> {
     const circle = await this.circleRepository
       .createQueryBuilder('circle')
@@ -142,24 +138,18 @@ export class CirclesService {
     return circle;
   }
 
-  /**
-   * (Use Case: Join a Circle)
-   * Allows a user to join an existing circle.
-   */
   async joinCircle(circleId: string, user: User) {
     const circle = await this.circleRepository.findOneBy({ id: circleId });
     if (!circle) {
       throw new NotFoundException(`Circle with ID ${circleId} not found`);
     }
 
-    // Check if user's reputation meets the circle's threshold
     if (user.reputationScore < circle.minimumRepThreshold) {
       throw new ForbiddenException(
         `Your reputation is too low to join this circle (Required: ${circle.minimumRepThreshold})`,
       );
     }
 
-    // Check if user is already a member
     const existingMembership = await this.membershipRepository.findOneBy({
       circleId,
       userId: user.id,
@@ -168,7 +158,6 @@ export class CirclesService {
       throw new ConflictException('You are already a member of this circle');
     }
 
-    // Create and save the new membership
     const membership = this.membershipRepository.create({
       circleId,
       userId: user.id,
@@ -177,10 +166,6 @@ export class CirclesService {
     return this.membershipRepository.save(membership);
   }
 
-  /**
-   * (Use Case: Leave a Circle)
-   * Allows a user to leave a circle.
-   */
   async leaveCircle(circleId: string, userId: string) {
     const membership = await this.membershipRepository.findOneBy({
       circleId,
@@ -190,7 +175,6 @@ export class CirclesService {
       throw new NotFoundException('You are not a member of this circle');
     }
 
-    // Safety check: prevent last admin from leaving
     if (membership.isAdmin) {
       const adminCount = await this.membershipRepository.count({
         where: { circleId, isAdmin: true },
@@ -206,16 +190,8 @@ export class CirclesService {
     return { message: 'Successfully left the circle' };
   }
 
-  /**
-   * (Admin Use Case)
-   * Updates a circle's details (e.g., name, radius).
-   * Requires the user to be an admin.
-   */
   async update(circleId: string, updateDto: any, userId: string) {
-    // Check if user is an admin for this circle
     await this.checkAdmin(circleId, userId);
-
-    // DTO would be `UpdateCircleDto`
     const result = await this.circleRepository.update(circleId, updateDto);
     if (result.affected === 0) {
       throw new NotFoundException(`Circle with ID ${circleId} not found`);
@@ -223,32 +199,16 @@ export class CirclesService {
     return this.findOneWithDetails(circleId);
   }
 
-  /**
-   * (Admin Use Case)
-   * Deletes a circle.
-   * Requires the user to be an admin.
-   */
   async remove(circleId: string, userId: string) {
-    // Check if user is an admin
     await this.checkAdmin(circleId, userId);
-
     const circle = await this.circleRepository.findOneBy({ id: circleId });
     if (!circle) {
       throw new NotFoundException(`Circle with ID ${circleId} not found`);
     }
-
-    // The 'onDelete: CASCADE' in your Membership
-    // entity will handle deleting all associated data.
     await this.circleRepository.remove(circle);
     return { message: `Circle ${circle.name} deleted successfully` };
   }
 
-  // --- PRIVATE HELPER METHODS ---
-
-  /**
-   * A private helper to check if a user is an admin of a circle.
-   * Throws a ForbiddenException if not.
-   */
   private async checkAdmin(circleId: string, userId: string) {
     const membership = await this.membershipRepository.findOne({
       where: { circleId, userId },
