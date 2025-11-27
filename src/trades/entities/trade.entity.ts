@@ -13,6 +13,7 @@ import { Item } from 'src/items/entities/item.entity';
 import { Circle } from 'src/circles/entities/circle.entity';
 import { TradeApplication } from './trade-application.entity';
 import { Dispute } from './dispute.entity';
+import { Message } from './message.entity'; // Import Message
 
 export enum TradeStatus {
   PENDING = 'pending',
@@ -82,6 +83,9 @@ export class Trade {
 
   @OneToOne(() => Dispute, (dispute) => dispute.trade)
   dispute: Dispute;
+
+  @OneToMany(() => Message, (message) => message.trade)
+  messages: Message[];
 
   // Non-database property to hold the current user's application status
   myApplication?: TradeApplication;

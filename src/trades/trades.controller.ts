@@ -7,6 +7,7 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Delete,
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
@@ -58,9 +59,8 @@ export class TradesController {
   async updateStatus(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateStatusDto: UpdateTradeStatusDto,
-    @GetUser() user: User,
   ) {
-    return this.tradesService.updateStatus(id, updateStatusDto.status, user.id);
+    return this.tradesService.updateStatus(id, updateStatusDto.status);
   }
 
   // Leave a review for a completed trade
@@ -88,5 +88,21 @@ export class TradesController {
     @GetUser() user: User,
   ) {
     return this.tradesService.getApplicationsForTrade(id, user);
+  }
+
+  @Post('applications/:id/accept')
+  async acceptApplication(
+    @Param('id', ParseUUIDPipe) applicationId: string,
+    @GetUser() user: User,
+  ) {
+    return this.tradesService.acceptApplication(applicationId, user);
+  }
+
+  @Delete('applications/:id')
+  async declineApplication(
+    @Param('id', ParseUUIDPipe) applicationId: string,
+    @GetUser() user: User,
+  ) {
+    return this.tradesService.declineApplication(applicationId, user);
   }
 }

@@ -111,7 +111,7 @@ export class TradesService {
     return trade;
   }
 
-  async updateStatus(tradeId: string, status: TradeStatus, userId: string) {
+  async updateStatus(tradeId: string, status: TradeStatus) {
     const trade = await this.tradeRepository.findOne({
       where: { id: tradeId },
       relations: ['proposer', 'offeredItem'],
@@ -120,9 +120,9 @@ export class TradesService {
     if (!trade) throw new NotFoundException('Trade not found');
 
     if (status === TradeStatus.ACCEPTED) {
-      if (trade.status !== TradeStatus.PENDING)
-        throw new BadRequestException('Trade not pending');
-      trade.recipientId = userId;
+      // Legacy path: if using direct accept. Now we prefer acceptApplication.
+      // But keeping for backward compat if needed.
+      // In the new flow, this status change happens inside acceptApplication
     }
 
     trade.status = status;
@@ -233,5 +233,55 @@ export class TradesService {
       relations: ['applicant', 'offeredItem'],
       order: { createdAt: 'DESC' },
     });
+  }
+
+  // Accept Application
+  async acceptApplication(applicationId: string, user: User) {
+    const application = await this.applicationRepository.findOne({
+      where: { id: applicationId },
+      relations: ['trade', 'applicant'], // Load relations
+    });
+
+    if (!application) throw new NotFoundException('Application not found');
+
+    // 1. Check permission (User must be the trade proposer)
+    if (application.trade.proposerId !== user.id) {
+      throw new ForbiddenException(
+        'You do not have permission to accept this application',
+      );
+    }
+
+    // 2. Update Application Status
+    application.status = TradeApplicationStatus.ACCEPTED;
+    await this.applicationRepository.save(application);
+
+    // 3. Update Trade Status and Set Recipient
+    const trade = application.trade;
+    trade.status = TradeStatus.ACCEPTED;
+    trade.recipient = application.applicant; // Set the successful applicant as recipient
+    await this.tradeRepository.save(trade);
+
+    return { message: 'Application accepted, chat opened.' };
+  }
+
+  // Decline Application (Delete it)
+  async declineApplication(applicationId: string, user: User) {
+    const application = await this.applicationRepository.findOne({
+      where: { id: applicationId },
+      relations: ['trade'],
+    });
+
+    if (!application) throw new NotFoundException('Application not found');
+
+    if (application.trade.proposerId !== user.id) {
+      throw new ForbiddenException(
+        'You do not have permission to decline this application',
+      );
+    }
+
+    // Delete the application
+    await this.applicationRepository.remove(application);
+
+    return { message: 'Application declined and removed.' };
   }
 }
