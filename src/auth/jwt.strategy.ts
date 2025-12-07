@@ -3,7 +3,7 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
-import { UserPayloadDto } from './dto/user-payload.dto';
+import { ValidatedUser } from './interfaces/validated-user.type';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -31,11 +31,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: {
     sub: string;
     username: string;
-  }): Promise<UserPayloadDto> {
+  }): Promise<ValidatedUser> {
+    // Fetch the full user entity from the database
     const user = await this.usersService.findOneByUsername(payload.username);
     if (!user) {
       throw new UnauthorizedException();
     }
-    return { id: payload.sub, username: payload.username };
+
+    // Strip the password hash before returning the user object
+    // This ensures request.user contains full details (reputation, bio, etc.)
+    const { passwordHash, ...result } = user;
+    return result;
   }
 }
