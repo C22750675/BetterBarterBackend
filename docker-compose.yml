@@ -1,11 +1,8 @@
 services:
   db:
-    # The official PostGIS image, which includes PostgreSQL and the PostGIS extension
-    image: postgis/postgis
+    image: postgis/postgis:16-3.4-alpine
     
-    platform: linux/amd64
-    
-    container_name: betterbarter-prototype-db
+    container_name: betterbarter-db
     
     # Docker Compose will automatically read values from the .env file
     # in the same directory
