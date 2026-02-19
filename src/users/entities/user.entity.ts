@@ -27,7 +27,7 @@ export class User {
   @Column({ nullable: true })
   profilePictureUrl: string;
 
-  @Column({ type: 'float', default: 5.0 })
+  @Column({ type: 'float', default: 50 })
   reputationScore: number;
 
   @CreateDateColumn()
@@ -39,11 +39,11 @@ export class User {
   @OneToMany(() => Membership, (membership) => membership.user)
   memberships: Membership[];
 
-  // Trades I *created* (as an admin)
+  // Trades the user created (as an admin)
   @OneToMany(() => Trade, (trade) => trade.proposer)
   proposedTrades: Trade[];
 
-  // Trades I *accepted* (as a member)
+  // Trades the user accepted (as a member)
   @OneToMany(() => Trade, (trade) => trade.recipient)
   receivedTrades: Trade[];
 
