@@ -10,6 +10,7 @@ import { TradeApplication } from './entities/trade-application.entity';
 import { Message } from './entities/message.entity';
 import { ChatService } from './chat.service';
 import { ChatController } from './chat.controller';
+import { ReputationModule } from 'src/reputation/reputation.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { ChatController } from './chat.controller';
       TradeApplication,
       Message,
     ]),
+    ReputationModule,
   ],
   controllers: [TradesController, ChatController],
   providers: [TradesService, ChatService],

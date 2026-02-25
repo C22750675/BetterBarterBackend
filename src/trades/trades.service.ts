@@ -17,6 +17,7 @@ import {
   TradeApplication,
   TradeApplicationStatus,
 } from './entities/trade-application.entity';
+import { ReputationService } from 'src/reputation/reputation.service';
 
 @Injectable()
 export class TradesService {
@@ -29,6 +30,7 @@ export class TradesService {
     private readonly ratingRepository: Repository<Rating>,
     @InjectRepository(TradeApplication)
     private readonly applicationRepository: Repository<TradeApplication>,
+    private readonly reputationService: ReputationService,
   ) {}
 
   async create(createTradeDto: CreateTradeDto, user: User) {
@@ -119,15 +121,11 @@ export class TradesService {
 
     if (!trade) throw new NotFoundException('Trade not found');
 
-    if (status === TradeStatus.ACCEPTED) {
-      // Legacy path: if using direct accept. Now we prefer acceptApplication.
-      // But keeping for backward compat if needed.
-      // In the new flow, this status change happens inside acceptApplication
-    }
-
     trade.status = status;
     if (status === TradeStatus.COMPLETED) {
       trade.completionDate = new Date();
+      // NOTE: We could also trigger a reputation update here for Engagement score,
+      // but usually we wait for the rating or run it on a schedule.
     }
 
     return this.tradeRepository.save(trade);
@@ -160,7 +158,13 @@ export class TradesService {
       trade: trade,
     });
 
-    return this.ratingRepository.save(rating);
+    const savedRating = await this.ratingRepository.save(rating);
+
+    // --- TRIGGER REPUTATION UPDATE ---
+    // Recalculate score for the person who was just rated
+    await this.reputationService.calculateAndSaveScore(rateeId);
+
+    return savedRating;
   }
 
   // Apply for a Trade
