@@ -78,6 +78,12 @@ export class Trade {
   @Column()
   circleId: string;
 
+  @Column({ default: false })
+  isRatedByProposer: boolean;
+
+  @Column({ default: false })
+  isRatedByRecipient: boolean;
+
   @OneToMany(() => TradeApplication, (application) => application.trade)
   applications: TradeApplication[];
 
