@@ -14,7 +14,7 @@ import {
 } from '@nestjs/common';
 import { CirclesService } from './circles.service';
 import { CreateCircleDto } from './dtos/create-circle.dto';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { JwtAuthGuard } from 'src/auth/decorators/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { User } from '../users/entities/user.entity';
 import { FindNearbyDto } from './dtos/find-nearby.dto';

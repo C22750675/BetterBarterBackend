@@ -12,7 +12,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { GetUser } from 'src/auth/decorators/get-user.decorator';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { JwtAuthGuard } from 'src/auth/decorators/jwt-auth.guard';
 import { User } from 'src/users/entities/user.entity';
 import { CreateTradeDto } from './dto/create-trade.dto';
 import { TradesService } from './trades.service';

@@ -13,7 +13,7 @@ import {
 import { ItemsService } from './items.service';
 import { CreateItemDto } from './dto/create-item.dto';
 import { UpdateItemDto } from './dto/update-item.dto';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/decorators/jwt-auth.guard';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import type { ValidatedUser } from 'src/auth/interfaces/validated-user.type';
 
