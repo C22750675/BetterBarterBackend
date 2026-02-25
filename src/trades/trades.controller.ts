@@ -34,7 +34,7 @@ export class TradesController {
   @Get('circle/:circleId')
   async findByCircle(
     @Param('circleId', ParseUUIDPipe) circleId: string,
-    @GetUser() user: User, // Inject user
+    @GetUser() user: User,
   ) {
     return this.tradesService.findByCircleId(circleId, user.id);
   }

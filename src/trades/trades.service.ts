@@ -98,7 +98,7 @@ export class TradesService {
   async findOne(tradeId: string, userId?: string): Promise<Trade> {
     const trade = await this.tradeRepository.findOne({
       where: { id: tradeId },
-      relations: ['proposer', 'offeredItem'], // Load items for details page
+      relations: ['proposer', 'recipient', 'offeredItem'],
     });
     if (!trade) throw new NotFoundException('Trade not found');
 
@@ -144,8 +144,10 @@ export class TradesService {
     let rateeId: string;
     if (rater.id === trade.proposerId) {
       rateeId = trade.recipientId;
+      trade.isRatedByProposer = true; // Set flag for proposer
     } else if (rater.id === trade.recipientId) {
       rateeId = trade.proposerId;
+      trade.isRatedByRecipient = true; // Set flag for recipient
     } else {
       throw new ForbiddenException('You were not part of this trade');
     }
@@ -159,6 +161,9 @@ export class TradesService {
     });
 
     const savedRating = await this.ratingRepository.save(rating);
+
+    // Save the updated trade flags to the database
+    await this.tradeRepository.save(trade);
 
     // --- TRIGGER REPUTATION UPDATE ---
     // Recalculate score for the person who was just rated
