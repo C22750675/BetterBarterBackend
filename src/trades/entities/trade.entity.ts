@@ -13,7 +13,7 @@ import { Item } from 'src/items/entities/item.entity';
 import { Circle } from 'src/circles/entities/circle.entity';
 import { TradeApplication } from './trade-application.entity';
 import { Dispute } from './dispute.entity';
-import { Message } from './message.entity'; // Import Message
+import { Message } from './message.entity';
 
 export enum TradeStatus {
   PENDING = 'pending',

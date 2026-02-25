@@ -21,14 +21,29 @@ export class User {
   @Column({ select: false }) // Hide password by default
   passwordHash: string;
 
+  @Column({ unique: true, nullable: true })
+  email: string;
+
+  @Column({ nullable: true })
+  phoneNumber: string;
+
+  @Column({ default: false })
+  isEmailVerified: boolean;
+
+  @Column({ default: false })
+  isPhoneVerified: boolean;
+
   @Column({ type: 'text', nullable: true })
   bio: string;
 
   @Column({ nullable: true })
   profilePictureUrl: string;
 
-  @Column({ type: 'float', default: 50 })
+  @Column({ type: 'float', default: 50.0 })
   reputationScore: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  lastReputationUpdate: Date;
 
   @CreateDateColumn()
   createdAt: Date;
