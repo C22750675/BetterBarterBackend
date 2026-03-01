@@ -99,8 +99,8 @@ export class ReputationService {
 
     // 2. Verification Component
     let verificationBase = 0;
-    if (params.isEmailVerified) verificationBase += 0.3;
-    if (params.isPhoneVerified) verificationBase += 0.7;
+    if (params.isEmailVerified) verificationBase += 0.4;
+    if (params.isPhoneVerified) verificationBase += 0.6; // Phone verification is weighted more heavily than email
 
     // 3. Engagement Component: Reflects recency via tradeCount decay
     const engagementBase = Math.min(Math.log10(params.tradeCount + 1), 1);
