@@ -8,6 +8,7 @@ import { TradesModule } from './trades/trades.module';
 import { AuthModule } from './auth/auth.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { ReputationModule } from './reputation/reputation.module';
+import { ReputationSimulatorService } from './reputation/reputation-simulator.service';
 
 @Module({
   imports: [
@@ -46,6 +47,6 @@ import { ReputationModule } from './reputation/reputation.module';
     ReputationModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [ReputationSimulatorService],
 })
 export class AppModule {}

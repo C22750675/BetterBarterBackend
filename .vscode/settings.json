@@ -1,5 +1,6 @@
 {
   "jest.enable": false,
   "snyk.advanced.organization": "2ae705be-d080-4611-be1f-43e6e4c85629",
-  "snyk.advanced.autoSelectOrganization": true
+  "snyk.advanced.autoSelectOrganization": true,
+  "python-envs.defaultEnvManager": "ms-python.python:system"
 }
