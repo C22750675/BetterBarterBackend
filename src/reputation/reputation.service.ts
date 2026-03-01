@@ -15,10 +15,10 @@ export class ReputationService {
   private readonly logger = new Logger(ReputationService.name);
 
   constructor(
-    @InjectRepository(User) private userRepo: Repository<User>,
-    @InjectRepository(Rating) private ratingRepo: Repository<Rating>,
-    @InjectRepository(Trade) private tradeRepo: Repository<Trade>,
-    @InjectRepository(Dispute) private disputeRepo: Repository<Dispute>,
+    @InjectRepository(User) private readonly userRepo: Repository<User>,
+    @InjectRepository(Rating) private readonly ratingRepo: Repository<Rating>,
+    @InjectRepository(Trade) private readonly tradeRepo: Repository<Trade>,
+    @InjectRepository(Dispute) private readonly disputeRepo: Repository<Dispute>,
   ) {}
 
   /**
