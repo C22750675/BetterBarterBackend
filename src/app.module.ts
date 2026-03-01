@@ -9,12 +9,14 @@ import { AuthModule } from './auth/auth.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { ReputationModule } from './reputation/reputation.module';
 import { ReputationSimulatorService } from './reputation/reputation-simulator.service';
+import reputationConfig from './config/reputation.config';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true, // Makes ConfigService available everywhere
-      envFilePath: '.env', // Specifies the .env file to load
+      load: [reputationConfig], // Tells NestJS to load the algorithmic parameters
+      isGlobal: true, // Makes ConfigService available across all modules
+      envFilePath: '.env', // Loads secrets from the environment file
     }),
 
     // Setup TypeORM with PostgreSQL using ConfigService
@@ -29,7 +31,6 @@ import { ReputationSimulatorService } from './reputation/reputation-simulator.se
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-
         synchronize: true,
       }),
       // This tells NestJS to inject the ConfigService into our useFactory function

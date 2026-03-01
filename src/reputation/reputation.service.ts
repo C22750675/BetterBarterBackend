@@ -36,12 +36,15 @@ export class ReputationService {
     tradeCount: number;
     penalties: number;
   }): number {
+    // Attempt to retrieve the 'reputation' namespace from the config registry
     const config = this.configService.get<ReputationConfig>('reputation');
 
-    // Ensures parameters exist before calculation
     if (!config?.weights || !config.sigmoid) {
+      this.logger.error(
+        'Reputation Config retrieved as: ' + JSON.stringify(config),
+      );
       throw new InternalServerErrorException(
-        'Reputation configuration is missing or malformed',
+        'Reputation configuration is missing or malformed. Ensure reputationConfig is loaded in AppModule.',
       );
     }
 
@@ -50,23 +53,23 @@ export class ReputationService {
     // 1. History: Bayesian Expectation
     const historyBase = params.alpha / (params.alpha + params.beta);
 
-    // 2. Verification: Fixed Trust Floor [1]
+    // 2. Verification Component with identity-specific weighting
     let verificationBase = 0;
-    if (params.isEmailVerified) verificationBase += 0.3; // Email verification weight
-    if (params.isPhoneVerified) verificationBase += 0.7; // Phone verification weight (harder to spoof)
+    if (params.isEmailVerified) verificationBase += 0.3;
+    if (params.isPhoneVerified) verificationBase += 0.7;
 
-    // 3. Engagement: Logarithmic diminishing returns
+    // 3. Engagement Component: Logarithmic scaling to prevent farming
     const engagementBase = Math.min(Math.log10(params.tradeCount + 1), 1);
 
-    // 4. Normalized Weighted Sum Model
+    // 4. Normalized Weighted Sum Model (Total Weight = 1.0)
     const rawSum =
       historyBase * weights.history +
       verificationBase * weights.verification +
       engagementBase * weights.engagement -
       params.penalties;
 
-    // 5. Sigmoid Smoothing using config steepness (k) and midpoint (x0)
-    // Formula: 100 / (1 + e^-k(rawSum - x0))
+    // 5. Sigmoid Smoothing
+    // Formula: S(rawSum) = 100 / (1 + e^-k(rawSum - x0))
     const finalScore = 100 / (1 + Math.exp(-sigmoid.k * (rawSum - sigmoid.x0)));
 
     return Number.parseFloat(finalScore.toFixed(2));
@@ -74,7 +77,7 @@ export class ReputationService {
 
   /**
    * Main entry point for reputation updates triggered by trade events.
-   * Enforces the "Sticky Penalty" principle where trust is hard to build but easy to break. [1]
+   * Enforces the "Sticky Penalty" principle where trust is hard to build but easy to break.
    */
   async updateReputation(
     userId: string,
@@ -84,15 +87,15 @@ export class ReputationService {
     const user = await this.userRepo.findOneBy({ id: userId });
     if (!user) return;
 
-    // Behavioral state updates
     if (type === ReputationChangeType.SUCCESS) {
       user.alpha += 1;
       user.tradeCount += 1;
+    } else if (type === ReputationChangeType.FAILURE) {
+      user.beta += 1;
+    } else if (type === ReputationChangeType.PENALTY) {
+      user.penalties += 0.1;
     }
-    if (type === ReputationChangeType.FAILURE) user.beta += 1;
-    if (type === ReputationChangeType.PENALTY) user.penalties += 0.1;
 
-    // Calculate snapshot with updated state
     const newScore = this.calculateScore({
       alpha: user.alpha,
       beta: user.beta,

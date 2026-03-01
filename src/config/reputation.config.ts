@@ -6,7 +6,7 @@ export default () => ({
       engagement: 0.1,
     },
     sigmoid: {
-      k: 15, // Steepness for Progressive Friction
+      k: 10, // Steepness for Progressive Friction
       x0: 0.5, // Midpoint where score is 50
     },
     decay: {
