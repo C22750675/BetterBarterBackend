@@ -1,4 +1,8 @@
-import { Injectable, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -7,6 +11,7 @@ import {
   ReputationLog,
   ReputationChangeType,
 } from './entities/reputation-log.entity';
+import { ReputationConfig } from './interfaces/reputation-config.interface';
 
 @Injectable()
 export class ReputationService {
@@ -31,15 +36,16 @@ export class ReputationService {
     tradeCount: number;
     penalties: number;
   }): number {
-    // Retrieve algorithmic parameters
-    const weights = this.configService.get<{
-      history: number;
-      verification: number;
-      engagement: number;
-    }>('reputation.weights');
-    const sigmoid = this.configService.get<{ k: number; x0: number }>(
-      'reputation.sigmoid',
-    );
+    const config = this.configService.get<ReputationConfig>('reputation');
+
+    // Ensures parameters exist before calculation
+    if (!config?.weights || !config.sigmoid) {
+      throw new InternalServerErrorException(
+        'Reputation configuration is missing or malformed',
+      );
+    }
+
+    const { weights, sigmoid } = config;
 
     // 1. History: Bayesian Expectation
     const historyBase = params.alpha / (params.alpha + params.beta);
