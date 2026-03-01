@@ -18,7 +18,8 @@ export class ReputationService {
     @InjectRepository(User) private readonly userRepo: Repository<User>,
     @InjectRepository(Rating) private readonly ratingRepo: Repository<Rating>,
     @InjectRepository(Trade) private readonly tradeRepo: Repository<Trade>,
-    @InjectRepository(Dispute) private readonly disputeRepo: Repository<Dispute>,
+    @InjectRepository(Dispute)
+    private readonly disputeRepo: Repository<Dispute>,
   ) {}
 
   /**
