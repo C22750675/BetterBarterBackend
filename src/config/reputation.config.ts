@@ -6,8 +6,8 @@ export default () => ({
       engagement: 0.1,
     },
     sigmoid: {
-      k: 10, // Steepness for Progressive Friction
-      x0: 0.5, // Midpoint where score is 50
+      k: 15, // Steepness for Progressive Friction
+      x0: 0.65, // Midpoint where score is 50
     },
     decay: {
       halfLifeDays: 180, // 6-month half-life
