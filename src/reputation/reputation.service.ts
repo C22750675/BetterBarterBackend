@@ -65,7 +65,7 @@ export class ReputationService {
     const finalScore = this.sigmoid(rawScore);
 
     // Save to DB
-    user.reputationScore = parseFloat(finalScore.toFixed(2));
+    user.reputationScore = Number.parseFloat(finalScore.toFixed(2));
     user.lastReputationUpdate = new Date();
     await this.userRepo.save(user);
 
