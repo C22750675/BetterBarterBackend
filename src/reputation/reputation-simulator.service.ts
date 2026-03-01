@@ -74,7 +74,7 @@ export class ReputationSimulatorService {
 
       fs.writeFileSync(filePath, JSON.stringify(results, null, 2));
 
-      const pythonCmd = `python3 "${plotterPath}" "${filePath}" "${persona.name} (Unified Algo Logic)"`;
+      const pythonCmd = `python3 "${plotterPath}" "${filePath}" "${persona.name} (${persona.description})"`;
       exec(pythonCmd, (err) => {
         if (err)
           this.logger.error(
