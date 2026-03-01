@@ -29,6 +29,9 @@ export interface ReputationConfig {
     alpha: number;
     beta: number;
   };
+  penalties: {
+    defaultImpact: number;
+  };
 }
 
 export interface ReputationState {
@@ -53,10 +56,15 @@ export class ReputationService {
 
   /**
    * Centralized logic for applying time decay.
-   * Can be used by the Simulator or the Scheduler.
+   * Pulls the decay factor from the configuration.
    */
   public applyDecay(state: ReputationState): ReputationState {
     const config = this.configService.get<ReputationConfig>('reputation');
+
+    if (!config?.decay?.halfLifeDays) {
+      this.logger.warn('Decay configuration missing. Defaulting to 180 days.');
+    }
+
     const halfLife = config?.decay?.halfLifeDays || 180;
     const decayFactor = Math.exp(-Math.log(2) / halfLife);
 
@@ -68,7 +76,6 @@ export class ReputationService {
       // Engagement (tradeCount) decays toward zero to reflect recency
       tradeCount: state.tradeCount * decayFactor,
       // Penalties decay, allowing users to recover from old disputes.
-      // We use the same decay factor so a penalty also has a 180-day half-life.
       penalties: state.penalties * decayFactor,
     };
   }
@@ -95,11 +102,10 @@ export class ReputationService {
     if (params.isEmailVerified) verificationBase += 0.3;
     if (params.isPhoneVerified) verificationBase += 0.7;
 
-    // 3. Engagement Component
+    // 3. Engagement Component: Reflects recency via tradeCount decay
     const engagementBase = Math.min(Math.log10(params.tradeCount + 1), 1);
 
     // 4. Normalized Weighted Sum Model
-    // We apply the penalty to the raw sum.
     const rawSum =
       historyBase * weights.history +
       verificationBase * weights.verification +
@@ -112,6 +118,9 @@ export class ReputationService {
     return Number.parseFloat(finalScore.toFixed(2));
   }
 
+  /**
+   * Main entry point for reputation updates triggered by trade events.
+   */
   async updateReputation(
     userId: string,
     type: ReputationChangeType,
@@ -120,15 +129,17 @@ export class ReputationService {
     const user = await this.userRepo.findOneBy({ id: userId });
     if (!user) return;
 
+    const config = this.configService.get<ReputationConfig>('reputation');
+
     if (type === ReputationChangeType.SUCCESS) {
       user.alpha += 1;
       user.tradeCount += 1;
     } else if (type === ReputationChangeType.FAILURE) {
       user.beta += 1;
     } else if (type === ReputationChangeType.PENALTY) {
-      // A dispute adds to penalties. With the new decay logic,
-      // this will slowly reduce over time.
-      user.penalties += 0.1;
+      // Use config impact instead of hardcoded 0.1
+      const impact = config?.penalties?.defaultImpact ?? 0.1;
+      user.penalties += impact;
     }
 
     user.reputationScore = this.calculateScore({
