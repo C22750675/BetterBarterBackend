@@ -93,7 +93,7 @@ export class ReputationService {
     let totalWeightedScore = 0;
     let totalMaxPossible = 0;
 
-    const now = new Date().getTime();
+    const now = Date.now();
     const SIX_MONTHS_MS = 1000 * 60 * 60 * 24 * 180;
 
     for (const rating of ratings) {
