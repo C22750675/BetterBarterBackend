@@ -1,8 +1,17 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ReputationService } from './reputation.service';
+import { ReputationService, ReputationState } from './reputation.service';
 import { exec } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+
+export interface PersonaBehavior {
+  name: string;
+  description: string;
+  tradeFrequency: number;
+  tradeCompletionRate: number;
+  disputeProbability: number;
+  inactivityPeriods?: { startDay: number; endDay: number }[];
+}
 
 export interface SimulationResult {
   day: number;
@@ -12,153 +21,121 @@ export interface SimulationResult {
   event: string;
 }
 
-interface InternalSimState {
-  alpha: number;
-  beta: number;
-  tradeCount: number;
-  penalties: number;
-}
-
 @Injectable()
 export class ReputationSimulatorService {
   private readonly logger = new Logger(ReputationSimulatorService.name);
-  private readonly DECAY_FACTOR = Math.exp(-Math.log(2) / 180); // 6-month half-life [4]
 
   constructor(private readonly reputationService: ReputationService) {}
 
-  /**
-   * Batch execution: Saves data to scripts/simulator_plotter/data/
-   * Triggers Python visualization for each persona. [1]
-   */
   public runFullBatchSimulation() {
-    const personas = ['BOMBER', 'REDEMPTION', 'INCONSISTENT'];
+    const personas: PersonaBehavior[] = [
+      {
+        name: 'THE_PROFESSIONAL',
+        description: 'High volume, consistent quality',
+        tradeFrequency: 0.8,
+        tradeCompletionRate: 0.99,
+        disputeProbability: 0.001,
+      },
+      {
+        name: 'THE_GHOST',
+        description: '30 days active, then decays to baseline',
+        tradeFrequency: 0.9,
+        tradeCompletionRate: 0.95,
+        disputeProbability: 0.01,
+        inactivityPeriods: [{ startDay: 31, endDay: 365 }],
+      },
+      {
+        name: 'THE_SCAMMER',
+        description: 'High volume of disputes and failures',
+        tradeFrequency: 0.6,
+        tradeCompletionRate: 0.3,
+        disputeProbability: 0.2,
+      },
+    ];
+
     const scriptsDir = path.join(process.cwd(), 'scripts', 'simulator_plotter');
     const dataDir = path.join(scriptsDir, 'data');
     const plotterPath = path.join(scriptsDir, 'reputation_plotter.py');
 
-    // Ensure data directory exists
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
+    if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
     for (const persona of personas) {
-      const results = this.runPersonaSimulation(persona);
-      const fileName = `${persona.toLowerCase()}_data.json`;
+      const results = this.runInterfaceSimulation(persona);
+      const fileName = `${persona.name.toLowerCase()}_data.json`;
       const filePath = path.join(dataDir, fileName);
 
       fs.writeFileSync(filePath, JSON.stringify(results, null, 2));
 
-      // Trigger Python Script (non-blocking shell execution)
-      const pythonCmd = `python3 "${plotterPath}" "${filePath}" "${persona} Persona"`;
-
-      exec(pythonCmd, (error) => {
-        if (error)
+      const pythonCmd = `python3 "${plotterPath}" "${filePath}" "${persona.name} (Unified Algo Logic)"`;
+      exec(pythonCmd, (err) => {
+        if (err)
           this.logger.error(
-            `Python Plotter Error (${persona}): ${error.message}`,
+            `Python Plotter Error (${persona.name}): ${err.message}`,
           );
       });
 
-      this.logger.log(
-        `Simulation complete for ${persona}. Data saved to data/${fileName}`,
-      );
+      this.logger.log(`Simulation complete for ${persona.name}`);
     }
 
-    return {
-      message: 'Batch simulation successful. Check your screen for graphs.',
-    };
+    return { message: 'Batch simulation successful.' };
   }
 
-  private runPersonaSimulation(persona: string): SimulationResult[] {
-    let state = { alpha: 1, beta: 1, tradeCount: 0, penalties: 0 };
+  private runInterfaceSimulation(persona: PersonaBehavior): SimulationResult[] {
+    // Shared state structure used by the real algo
+    let state: ReputationState = {
+      alpha: 1,
+      beta: 1,
+      tradeCount: 0,
+      penalties: 0,
+      isEmailVerified: false,
+      isPhoneVerified: false,
+    };
+
     const history: SimulationResult[] = [];
 
     for (let day = 1; day <= 365; day++) {
-      state = this.applyDailyDecay(state);
-      const eventLabel = this.applyPersonaBehavior(persona, day, state);
-      history.push(this.captureSnapshot(day, state, eventLabel));
+      // Use the SHARED decay logic from ReputationService
+      state = this.reputationService.applyDecay(state);
+
+      const eventLabel = this.processProbabilisticDay(persona, day, state);
+
+      history.push({
+        day,
+        alpha: Number(state.alpha.toFixed(4)),
+        beta: Number(state.beta.toFixed(4)),
+        score: this.reputationService.calculateScore(state),
+        event: eventLabel,
+      });
     }
     return history;
   }
 
-  private applyDailyDecay(state: InternalSimState): InternalSimState {
-    return {
-      ...state,
-      alpha: 1 + (state.alpha - 1) * this.DECAY_FACTOR,
-      beta: 1 + (state.beta - 1) * this.DECAY_FACTOR,
-    };
-  }
-
-  /**
-   * Decoupled Behavioral Sub-functions for reduced complexity. [1]
-   */
-  private applyPersonaBehavior(
-    persona: string,
+  private processProbabilisticDay(
+    persona: PersonaBehavior,
     day: number,
-    state: InternalSimState,
+    state: ReputationState,
   ): string {
-    switch (persona) {
-      case 'BOMBER':
-        return this.simulateBomber(day, state);
-      case 'REDEMPTION':
-        return this.simulateRedemption(day, state);
-      case 'INCONSISTENT':
-        return this.simulateInconsistent(day, state);
-      default:
-        return 'No Activity';
-    }
-  }
+    const isInactive = persona.inactivityPeriods?.some(
+      (p) => day >= p.startDay && day <= p.endDay,
+    );
+    if (isInactive) return 'Inactive';
 
-  private simulateBomber(day: number, state: InternalSimState): string {
-    if (day <= 10) {
-      for (let i = 0; i < 10; i++) {
-        state.alpha += 1;
-        state.tradeCount += 1;
-      }
-      return 'Reputation Bombing';
-    }
-    return 'No Activity';
-  }
+    if (Math.random() > persona.tradeFrequency) return 'No Activity';
 
-  private simulateRedemption(day: number, state: InternalSimState): string {
-    if (day === 1) {
-      state.beta += 10;
-      return 'Initial Major Failure';
+    const isDispute = Math.random() < persona.disputeProbability;
+    if (isDispute) {
+      state.penalties += 0.1;
+      return 'Dispute';
     }
-    if (day > 30 && day % 15 === 0) {
+
+    const isSuccess = Math.random() < persona.tradeCompletionRate;
+    if (isSuccess) {
       state.alpha += 1;
       state.tradeCount += 1;
-      return 'Recovery Trade';
+      return 'Success';
+    } else {
+      state.beta += 1;
+      return 'Failure';
     }
-    return 'No Activity';
-  }
-
-  private simulateInconsistent(day: number, state: InternalSimState): string {
-    if (day % 7 === 0) {
-      const isSuccess = Math.random() > 0.3;
-      if (isSuccess) state.alpha += 1;
-      else state.beta += 1;
-      state.tradeCount += 1;
-      return isSuccess ? 'Success' : 'Failure';
-    }
-    return 'No Activity';
-  }
-
-  private captureSnapshot(
-    day: number,
-    state: InternalSimState,
-    event: string,
-  ): SimulationResult {
-    const score = this.reputationService.calculateScore({
-      ...state,
-      isEmailVerified: true,
-      isPhoneVerified: false,
-    });
-    return {
-      day,
-      alpha: Number(state.alpha.toFixed(4)),
-      beta: Number(state.beta.toFixed(4)),
-      score,
-      event,
-    };
   }
 }

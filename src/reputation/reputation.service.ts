@@ -11,7 +11,34 @@ import {
   ReputationLog,
   ReputationChangeType,
 } from './entities/reputation-log.entity';
-import { ReputationConfig } from './interfaces/reputation-config.interface';
+
+export interface ReputationConfig {
+  weights: {
+    history: number;
+    verification: number;
+    engagement: number;
+  };
+  sigmoid: {
+    k: number;
+    x0: number;
+  };
+  decay: {
+    halfLifeDays: number;
+  };
+  priors: {
+    alpha: number;
+    beta: number;
+  };
+}
+
+export interface ReputationState {
+  alpha: number;
+  beta: number;
+  tradeCount: number;
+  penalties: number;
+  isEmailVerified: boolean;
+  isPhoneVerified: boolean;
+}
 
 @Injectable()
 export class ReputationService {
@@ -25,26 +52,36 @@ export class ReputationService {
   ) {}
 
   /**
-   * Calculates the trust score using parameters from the config module.
-   * Allows for rapid sensitivity analysis during project evaluation phase.
+   * Centralized logic for applying time decay.
+   * Can be used by the Simulator or the Scheduler.
    */
-  public calculateScore(params: {
-    alpha: number;
-    beta: number;
-    isEmailVerified: boolean;
-    isPhoneVerified: boolean;
-    tradeCount: number;
-    penalties: number;
-  }): number {
-    // Attempt to retrieve the 'reputation' namespace from the config registry
+  public applyDecay(state: ReputationState): ReputationState {
+    const config = this.configService.get<ReputationConfig>('reputation');
+    const halfLife = config?.decay?.halfLifeDays || 180;
+    const decayFactor = Math.exp(-Math.log(2) / halfLife);
+
+    return {
+      ...state,
+      // Alpha and Beta decay back toward the prior (1.0)
+      alpha: 1 + (state.alpha - 1) * decayFactor,
+      beta: 1 + (state.beta - 1) * decayFactor,
+      // Engagement (tradeCount) decays toward zero to reflect recency
+      tradeCount: state.tradeCount * decayFactor,
+      // Penalties decay, allowing users to recover from old disputes.
+      // We use the same decay factor so a penalty also has a 180-day half-life.
+      penalties: state.penalties * decayFactor,
+    };
+  }
+
+  /**
+   * Calculates the trust score using parameters from the config module.
+   */
+  public calculateScore(params: ReputationState): number {
     const config = this.configService.get<ReputationConfig>('reputation');
 
     if (!config?.weights || !config.sigmoid) {
-      this.logger.error(
-        'Reputation Config retrieved as: ' + JSON.stringify(config),
-      );
       throw new InternalServerErrorException(
-        'Reputation configuration is missing or malformed. Ensure reputationConfig is loaded in AppModule.',
+        'Reputation configuration missing.',
       );
     }
 
@@ -53,15 +90,16 @@ export class ReputationService {
     // 1. History: Bayesian Expectation
     const historyBase = params.alpha / (params.alpha + params.beta);
 
-    // 2. Verification Component with identity-specific weighting
+    // 2. Verification Component
     let verificationBase = 0;
     if (params.isEmailVerified) verificationBase += 0.3;
     if (params.isPhoneVerified) verificationBase += 0.7;
 
-    // 3. Engagement Component: Logarithmic scaling to prevent farming
+    // 3. Engagement Component
     const engagementBase = Math.min(Math.log10(params.tradeCount + 1), 1);
 
-    // 4. Normalized Weighted Sum Model (Total Weight = 1.0)
+    // 4. Normalized Weighted Sum Model
+    // We apply the penalty to the raw sum.
     const rawSum =
       historyBase * weights.history +
       verificationBase * weights.verification +
@@ -69,16 +107,11 @@ export class ReputationService {
       params.penalties;
 
     // 5. Sigmoid Smoothing
-    // Formula: S(rawSum) = 100 / (1 + e^-k(rawSum - x0))
     const finalScore = 100 / (1 + Math.exp(-sigmoid.k * (rawSum - sigmoid.x0)));
 
     return Number.parseFloat(finalScore.toFixed(2));
   }
 
-  /**
-   * Main entry point for reputation updates triggered by trade events.
-   * Enforces the "Sticky Penalty" principle where trust is hard to build but easy to break.
-   */
   async updateReputation(
     userId: string,
     type: ReputationChangeType,
@@ -93,19 +126,20 @@ export class ReputationService {
     } else if (type === ReputationChangeType.FAILURE) {
       user.beta += 1;
     } else if (type === ReputationChangeType.PENALTY) {
+      // A dispute adds to penalties. With the new decay logic,
+      // this will slowly reduce over time.
       user.penalties += 0.1;
     }
 
-    const newScore = this.calculateScore({
+    user.reputationScore = this.calculateScore({
       alpha: user.alpha,
       beta: user.beta,
-      isEmailVerified: user.isEmailVerified,
-      isPhoneVerified: user.isPhoneVerified,
       tradeCount: user.tradeCount,
       penalties: user.penalties,
+      isEmailVerified: user.isEmailVerified,
+      isPhoneVerified: user.isPhoneVerified,
     });
 
-    user.reputationScore = newScore;
     user.lastReputationUpdate = new Date();
     await this.userRepo.save(user);
 
