@@ -39,7 +39,7 @@ export class User {
   @Column({ nullable: true })
   profilePictureUrl: string;
 
-  @Column({ type: 'float', default: 50.0 })
+  @Column({ type: 'float', default: 50 })
   reputationScore: number;
 
   @Column({ type: 'timestamp', nullable: true })
