@@ -1,4 +1,4 @@
-export default () => ({
+const reputation = () => ({
   reputation: {
     weights: {
       history: 0.55,
@@ -18,3 +18,4 @@ export default () => ({
     },
   },
 });
+export default reputation;
