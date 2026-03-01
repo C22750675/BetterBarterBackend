@@ -18,6 +18,7 @@ import {
   TradeApplicationStatus,
 } from './entities/trade-application.entity';
 import { ReputationService } from 'src/reputation/reputation.service';
+import { ReputationChangeType } from 'src/reputation/entities/reputation-log.entity';
 
 @Injectable()
 export class TradesService {
@@ -124,8 +125,6 @@ export class TradesService {
     trade.status = status;
     if (status === TradeStatus.COMPLETED) {
       trade.completionDate = new Date();
-      // NOTE: We could also trigger a reputation update here for Engagement score,
-      // but usually we wait for the rating or run it on a schedule.
     }
 
     return this.tradeRepository.save(trade);
@@ -161,13 +160,19 @@ export class TradesService {
     });
 
     const savedRating = await this.ratingRepository.save(rating);
-
-    // Save the updated trade flags to the database
     await this.tradeRepository.save(trade);
 
-    // --- TRIGGER REPUTATION UPDATE ---
-    // Recalculate score for the person who was just rated
-    await this.reputationService.calculateAndSaveScore(rateeId);
+    // Map 1-5 star rating to binary Success/Failure for Bayesian parameters
+    const changeType =
+      dto.score >= 3
+        ? ReputationChangeType.SUCCESS
+        : ReputationChangeType.FAILURE;
+
+    await this.reputationService.updateReputation(
+      rateeId,
+      changeType,
+      `Rating received for Trade ID: ${tradeId}`,
+    );
 
     return savedRating;
   }

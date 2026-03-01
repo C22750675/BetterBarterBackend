@@ -1,9 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 import { User } from '../users/entities/user.entity';
-import { LessThan, Repository } from 'typeorm';
 import { ReputationService } from './reputation.service';
+import { ReputationChangeType } from './entities/reputation-log.entity';
 
 @Injectable()
 export class ReputationScheduler {
@@ -11,44 +12,42 @@ export class ReputationScheduler {
 
   constructor(
     @InjectRepository(User)
-    private readonly userRepository: Repository<User>,
+    private readonly userRepo: Repository<User>,
     private readonly reputationService: ReputationService,
   ) {}
 
   // Run this task at midnight every day to apply time decay to user reputations
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
-  async handleWeeklyDecay() {
-    this.logger.log('Starting weekly reputation decay check...');
+  async handleDailyDecay() {
+    // Exponential decay factor for half-life of 180 days
+    const decayFactor = Math.exp(-Math.log(2) / 180);
 
-    // Define "Stale": Score hasn't been updated in the last 7 days
-    const staleDate = new Date();
-    staleDate.setDate(staleDate.getDate() - 7);
+    // Fetch all users to apply decay
+    const users = await this.userRepo.find();
 
-    // Find users who need an update
-    // We use chunking (take/skip) or a cursor here if we had millions of users,
-    // but for now, finding all stale users is acceptable.
-    const staleUsers = await this.userRepository.find({
-      where: {
-        lastReputationUpdate: LessThan(staleDate),
-      },
-      select: ['id'], // We only need the ID to trigger the service
-    });
+    for (const user of users) {
+      const oldAlpha = user.alpha;
 
-    this.logger.log(
-      `Found ${staleUsers.length} users requiring reputation updates.`,
-    );
+      user.alpha = 1 + (user.alpha - 1) * decayFactor;
+      user.beta = 1 + (user.beta - 1) * decayFactor;
 
-    for (const user of staleUsers) {
-      try {
-        await this.reputationService.calculateAndSaveScore(user.id);
-      } catch (error) {
-        this.logger.error(
-          `Failed to update reputation for user ${user.id}`,
-          error,
+      if (Math.abs(user.alpha - oldAlpha) > 0.001) {
+        user.reputationScore = this.reputationService.calculateScore({
+          alpha: user.alpha,
+          beta: user.beta,
+          isEmailVerified: user.isEmailVerified,
+          isPhoneVerified: user.isPhoneVerified,
+          tradeCount: user.tradeCount,
+          penalties: user.penalties,
+        });
+
+        await this.userRepo.save(user);
+        await this.reputationService.updateReputation(
+          user.id,
+          ReputationChangeType.DECAY,
+          'Daily half-life decay applied',
         );
       }
     }
-
-    this.logger.log('Weekly reputation decay check complete.');
   }
 }

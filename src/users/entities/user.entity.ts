@@ -9,6 +9,7 @@ import { Item } from '../../items/entities/item.entity';
 import { Membership } from 'src/circles/entities/membership.entity';
 import { Trade } from 'src/trades/entities/trade.entity';
 import { TradeApplication } from 'src/trades/entities/trade-application.entity';
+import { ReputationLog } from 'src/reputation/entities/reputation-log.entity';
 
 @Entity()
 export class User {
@@ -42,6 +43,18 @@ export class User {
   @Column({ type: 'float', default: 50 })
   reputationScore: number;
 
+  @Column({ type: 'float', default: 1 })
+  alpha: number; // Cumulative Successes
+
+  @Column({ type: 'float', default: 1 })
+  beta: number; // Cumulative Failures
+
+  @Column({ type: 'int', default: 0 })
+  tradeCount: number; // For Engagement Component
+
+  @Column({ type: 'float', default: 0 })
+  penalties: number; // Manual severity-based deductions
+
   @Column({ type: 'timestamp', nullable: true })
   lastReputationUpdate: Date;
 
@@ -63,5 +76,8 @@ export class User {
   receivedTrades: Trade[];
 
   @OneToMany(() => TradeApplication, (application) => application.applicant)
-  tradeApplications: TradeApplication[];
+  tradeApplications: TradeApplication;
+
+  @OneToMany(() => ReputationLog, (log) => log.user)
+  reputationLogs: ReputationLog;
 }
