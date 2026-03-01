@@ -1,5 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { ReputationService, ReputationState } from './reputation.service';
+import {
+  ReputationConfig,
+  ReputationService,
+  ReputationState,
+} from './reputation.service';
+import { ConfigService } from '@nestjs/config';
 import { exec } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -25,19 +30,22 @@ export interface SimulationResult {
 export class ReputationSimulatorService {
   private readonly logger = new Logger(ReputationSimulatorService.name);
 
-  constructor(private readonly reputationService: ReputationService) {}
+  constructor(
+    private readonly reputationService: ReputationService,
+    private readonly configService: ConfigService,
+  ) {}
 
   public runFullBatchSimulation() {
     const personas: PersonaBehavior[] = [
       {
-        name: 'THE_PROFESSIONAL',
+        name: 'The Professional',
         description: 'High volume, consistent quality',
         tradeFrequency: 0.8,
         tradeCompletionRate: 0.99,
         disputeProbability: 0.001,
       },
       {
-        name: 'THE_GHOST',
+        name: 'The Ghost',
         description: '30 days active, then decays to baseline',
         tradeFrequency: 0.9,
         tradeCompletionRate: 0.95,
@@ -45,7 +53,7 @@ export class ReputationSimulatorService {
         inactivityPeriods: [{ startDay: 31, endDay: 365 }],
       },
       {
-        name: 'THE_SCAMMER',
+        name: 'The Scammer',
         description: 'High volume of disputes and failures',
         tradeFrequency: 0.6,
         tradeCompletionRate: 0.3,
@@ -124,7 +132,11 @@ export class ReputationSimulatorService {
 
     const isDispute = Math.random() < persona.disputeProbability;
     if (isDispute) {
-      state.penalties += 0.1;
+      // Pull penalty impact from the Reputation Configuration in Canvas
+      const config = this.configService.get<ReputationConfig>('reputation');
+      const impact = config?.penalties?.defaultImpact ?? 0.1;
+
+      state.penalties += impact;
       return 'Dispute';
     }
 
