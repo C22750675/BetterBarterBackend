@@ -1,10 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, LessThan } from 'typeorm';
 import { User } from '../users/entities/user.entity';
 import { ReputationService } from './reputation.service';
-import { ReputationChangeType } from './entities/reputation-log.entity';
 
 @Injectable()
 export class ReputationScheduler {
@@ -17,58 +16,46 @@ export class ReputationScheduler {
   ) {}
 
   /**
-   * Run this task at midnight every day to apply time decay to user reputations.
-   * This now uses the centralized applyDecay logic to ensure consistency
-   * between the simulator and production.
+   * Daily Maintenance Task.
+   * Only target users who haven't updated in over 24 hours.
    */
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async handleDailyDecay() {
-    this.logger.log('Starting daily reputation decay process...');
+    this.logger.log(
+      'Starting maintenance reputation decay for inactive users...',
+    );
 
-    // Fetch all users to apply decay
-    const users = await this.userRepo.find();
+    // Only fetch users who haven't been updated in the last 24 hours
+    const oneDayAgo = new Date();
+    oneDayAgo.setDate(oneDayAgo.getDate() - 1);
+
+    const users = await this.userRepo.find({
+      where: {
+        lastReputationUpdate: LessThan(oneDayAgo),
+      },
+    });
+
     let updatedCount = 0;
 
     for (const user of users) {
-      const oldAlpha = user.alpha;
-      const oldScore = user.reputationScore;
+      // Apply lazy decay to catch up
+      const decayedState = this.reputationService.applyLazyDecay(user);
 
-      // Use the unified decay logic which now includes tradeCount (Engagement) decay
-      const decayedState = this.reputationService.applyDecay({
-        alpha: user.alpha,
-        beta: user.beta,
-        tradeCount: user.tradeCount,
-        penalties: user.penalties,
-        isEmailVerified: user.isEmailVerified,
-        isPhoneVerified: user.isPhoneVerified,
-      });
-
-      // Update the user entity with decayed values
+      // Update entity
       user.alpha = decayedState.alpha;
       user.beta = decayedState.beta;
+      user.penalties = decayedState.penalties;
       user.tradeCount = decayedState.tradeCount;
+      user.reputationScore =
+        this.reputationService.calculateScore(decayedState);
+      user.lastReputationUpdate = new Date();
 
-      // Only update and log if there is a significant change in alpha or the resulting score
-      if (Math.abs(user.alpha - oldAlpha) > 0.0001) {
-        user.reputationScore =
-          this.reputationService.calculateScore(decayedState);
-        user.lastReputationUpdate = new Date();
-
-        await this.userRepo.save(user);
-
-        // Log the change for audit purposes
-        await this.reputationService.updateReputation(
-          user.id,
-          ReputationChangeType.DECAY,
-          `Daily decay applied: Score changed from ${oldScore} to ${user.reputationScore}`,
-        );
-
-        updatedCount++;
-      }
+      await this.userRepo.save(user);
+      updatedCount++;
     }
 
     this.logger.log(
-      `Reputation decay complete. Updated ${updatedCount} users.`,
+      `Maintenance decay complete. Updated ${updatedCount} inactive accounts.`,
     );
   }
 }
