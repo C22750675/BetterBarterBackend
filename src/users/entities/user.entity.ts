@@ -43,7 +43,7 @@ export class User {
   @Column({ type: 'float', default: 50 })
   reputationScore: number;
 
-  @Column({ type: 'float', default: 1 })
+  @Column({ type: 'float', default: 2 })
   alpha: number; // Cumulative Successes
 
   @Column({ type: 'float', default: 1 })
