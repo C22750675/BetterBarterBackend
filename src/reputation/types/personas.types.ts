@@ -7,7 +7,7 @@ export const MARKETPLACE_PERSONAS: PersonaBehavior[] = [
       'High volume, professional trader with near-perfect execution.',
     tradeFrequency: 0.95, // Trades almost every day
     tradeCompletionRate: 0.99,
-    disputeProbability: 0.001,
+    disputeProbability: 0.0005,
   },
   {
     name: 'The Casual Buyer',
@@ -15,7 +15,7 @@ export const MARKETPLACE_PERSONAS: PersonaBehavior[] = [
       'Low volume, reliable participant. Tests how the system handles sparse data.',
     tradeFrequency: 0.05, // Trades once every 20 days on average
     tradeCompletionRate: 1,
-    disputeProbability: 0.01,
+    disputeProbability: 0.005,
   },
   {
     name: 'The Seasonal Merchant',
@@ -23,7 +23,7 @@ export const MARKETPLACE_PERSONAS: PersonaBehavior[] = [
       'Highly active in bursts, followed by long periods of inactivity to test decay.',
     tradeFrequency: 0.8,
     tradeCompletionRate: 0.95,
-    disputeProbability: 0.01,
+    disputeProbability: 0.005,
     inactivityPeriods: [
       { startDay: 60, endDay: 150 }, // Away for 3 months
       { startDay: 210, endDay: 300 }, // Away for another 3 months
@@ -35,7 +35,7 @@ export const MARKETPLACE_PERSONAS: PersonaBehavior[] = [
       'Frequent activity but high failure rate. Tests the Beta parameter (failures).',
     tradeFrequency: 0.6,
     tradeCompletionRate: 0.7, // 30% failure rate
-    disputeProbability: 0.02,
+    disputeProbability: 0.01,
   },
   {
     name: 'The High-Risk Scammer',
@@ -51,7 +51,7 @@ export const MARKETPLACE_PERSONAS: PersonaBehavior[] = [
       'Starts perfect, then disappears. Tests if decay correctly pulls scores toward neutral.',
     tradeFrequency: 0.9,
     tradeCompletionRate: 0.99,
-    disputeProbability: 0.001,
+    disputeProbability: 0.0005,
     inactivityPeriods: [{ startDay: 90, endDay: 730 }], // Active for 3 months, then gone for 2 years
   },
   {
@@ -60,7 +60,7 @@ export const MARKETPLACE_PERSONAS: PersonaBehavior[] = [
       'Completes trades but is highly litigious or problematic, triggering penalties.',
     tradeFrequency: 0.5,
     tradeCompletionRate: 0.95,
-    disputeProbability: 0.1, // High penalty rate despite successful completions
+    disputeProbability: 0.05, // High penalty rate despite successful completions
   },
   {
     name: 'The "Exit Scammer" Proxy',
@@ -68,6 +68,6 @@ export const MARKETPLACE_PERSONAS: PersonaBehavior[] = [
       'Mid-range activity with high volatility. Tests the sigmoid midpoint sensitivity.',
     tradeFrequency: 0.4,
     tradeCompletionRate: 0.5,
-    disputeProbability: 0.1,
+    disputeProbability: 0.05,
   },
 ];
