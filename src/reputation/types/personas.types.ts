@@ -14,7 +14,7 @@ export const MARKETPLACE_PERSONAS: PersonaBehavior[] = [
     description:
       'Low volume, reliable participant. Tests how the system handles sparse data.',
     tradeFrequency: 0.05, // Trades once every 20 days on average
-    tradeCompletionRate: 1,
+    tradeCompletionRate: 0.98,
     disputeProbability: 0.005,
   },
   {

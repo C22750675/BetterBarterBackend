@@ -84,12 +84,12 @@ export class ReputationSimulatorService {
   private runInterfaceSimulation(persona: PersonaBehavior): SimulationResult[] {
     // Initial neutral state
     let state: ReputationState = {
-      alpha: 1,
+      alpha: 2,
       beta: 1,
       tradeCount: 0,
       penalties: 0,
-      isEmailVerified: true, // Assume verified for simulation baseline
-      isPhoneVerified: true,
+      isEmailVerified: false,
+      isPhoneVerified: false,
     };
 
     const history: SimulationResult[] = [];
