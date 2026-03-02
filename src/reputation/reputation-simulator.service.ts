@@ -8,16 +8,7 @@ import { ConfigService } from '@nestjs/config';
 import { exec } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { MARKETPLACE_PERSONAS } from './types/personas.types';
-
-export interface PersonaBehavior {
-  name: string;
-  description: string;
-  tradeFrequency: number;
-  tradeCompletionRate: number;
-  disputeProbability: number;
-  inactivityPeriods?: { startDay: number; endDay: number }[];
-}
+import { MARKETPLACE_PERSONAS, PersonaBehavior } from './types/personas.types';
 
 export interface SimulationResult {
   day: number;
@@ -75,13 +66,15 @@ export class ReputationSimulatorService {
    */
   private runInterfaceSimulation(persona: PersonaBehavior): SimulationResult[] {
     const config = this.configService.get<ReputationConfig>('reputation');
+
+    // Initialize state using the specific verification status defined in the persona
     let state: ReputationState = {
       alpha: config?.priors?.alpha ?? 2,
       beta: config?.priors?.beta ?? 1,
       tradeCount: 0,
       penalties: 0,
-      isEmailVerified: true, // Assuming email is verified for sim focus
-      isPhoneVerified: false,
+      isEmailVerified: persona.isEmailVerified,
+      isPhoneVerified: persona.isPhoneVerified,
     };
 
     const history: SimulationResult[] = [];
