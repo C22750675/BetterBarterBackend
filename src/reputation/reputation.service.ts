@@ -23,7 +23,8 @@ export interface ReputationConfig {
     x0: number;
   };
   decay: {
-    halfLifeDays: number;
+    alphaHalfLifeDays: number;
+    betaHalfLifeDays: number;
     penaltyHalfLifeDays: number;
     decayTradeCount: boolean;
   };
@@ -58,7 +59,7 @@ export class ReputationService {
 
   /**
    * Centralized logic for applying time decay.
-   * Regression to Priors + Penalty Cool-off.
+   * Regression to Priors with asymmetrical alpha/beta decay + Penalty Cool-off.
    */
   public applyDecay(
     state: ReputationState,
@@ -67,26 +68,33 @@ export class ReputationService {
     const config = this.configService.get<ReputationConfig>('reputation');
     if (!config) return state;
 
-    const { halfLifeDays, penaltyHalfLifeDays, decayTradeCount } = config.decay;
+    const {
+      alphaHalfLifeDays,
+      betaHalfLifeDays,
+      penaltyHalfLifeDays,
+      decayTradeCount,
+    } = config.decay;
     const { alpha: priorAlpha, beta: priorBeta } = config.priors;
 
-    // Calculate decay factors based on half-life formula
-    const repDecayFactor = Math.pow(0.5, daysElapsed / halfLifeDays);
+    // Calculate independent decay factors for successes and failures
+    const alphaDecayFactor = Math.pow(0.5, daysElapsed / alphaHalfLifeDays);
+    const betaDecayFactor = Math.pow(0.5, daysElapsed / betaHalfLifeDays);
     const penaltyDecayFactor = Math.pow(
       0.5,
       daysElapsed / (penaltyHalfLifeDays || 30),
     );
 
-    // Regression to Priors: Decay moves toward neutral start, not zero
-    const newAlpha = priorAlpha + (state.alpha - priorAlpha) * repDecayFactor;
-    const newBeta = priorBeta + (state.beta - priorBeta) * repDecayFactor;
+    // Regression to Priors: Decay moves toward neutral start using independent rates
+    const newAlpha = priorAlpha + (state.alpha - priorAlpha) * alphaDecayFactor;
+    const newBeta = priorBeta + (state.beta - priorBeta) * betaDecayFactor;
 
     // Penalties decay toward zero (cool-off)
     const newPenalties = state.penalties * penaltyDecayFactor;
 
     // Engagement (Experience) Preservation logic
+    // Using alpha decay factor as proxy for general engagement if enabled
     const newTradeCount = decayTradeCount
-      ? state.tradeCount * repDecayFactor
+      ? state.tradeCount * alphaDecayFactor
       : state.tradeCount;
 
     return {
@@ -133,7 +141,7 @@ export class ReputationService {
   }
 
   /**
-   * Calculates the reputation score [0-100] using weighted Bayesian parameters.
+   * Calculates the final sigmoid score.
    */
   public calculateScore(params: ReputationState): number {
     const config = this.configService.get<ReputationConfig>('reputation');
@@ -162,7 +170,6 @@ export class ReputationService {
 
     // 5. Sigmoid Smoothing
     const finalScore = 100 / (1 + Math.exp(-sigmoid.k * (rawSum - sigmoid.x0)));
-
     return Number.parseFloat(finalScore.toFixed(2));
   }
 
@@ -178,7 +185,7 @@ export class ReputationService {
     const user = await this.userRepo.findOneBy({ id: userId });
     if (!user) return;
 
-    // 1. Apply Lazy Decay first to catch up to real-time
+    // 1. Apply Lazy Decay
     const decayedState = this.applyLazyDecay(user);
     Object.assign(user, decayedState);
 
