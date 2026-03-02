@@ -53,28 +53,20 @@ export class ReputationSimulatorService {
 
       // Sanitize filename: lowercase and replace spaces with underscores
       const safeName = persona.name.toLowerCase().replaceAll(/\s+/g, '_');
-      const fileName = `${safeName}_data.json`;
-      const filePath = path.join(dataDir, fileName);
+      const filePath = path.join(dataDir, `${safeName}_data.json`);
 
       fs.writeFileSync(filePath, JSON.stringify(results, null, 2));
 
       // Execute Python plotter script
       const pythonCmd = `python3 "${plotterPath}" "${filePath}" "${persona.name} (${persona.description})"`;
-
       exec(pythonCmd, (err) => {
-        if (err) {
-          this.logger.error(
-            `Python Plotter Error (${persona.name}): ${err.message}`,
-          );
-        }
+        if (err) this.logger.error(`Plotter Error: ${err.message}`);
       });
-
-      this.logger.log(`Simulation complete for ${persona.name}`);
     }
 
     return {
       message: 'Batch simulation successful.',
-      personaCount: MARKETPLACE_PERSONAS.length,
+      count: MARKETPLACE_PERSONAS.length,
     };
   }
 
@@ -82,13 +74,13 @@ export class ReputationSimulatorService {
    * Simulates 2 years (730 days) of activity for a specific persona.
    */
   private runInterfaceSimulation(persona: PersonaBehavior): SimulationResult[] {
-    // Initial neutral state
+    const config = this.configService.get<ReputationConfig>('reputation');
     let state: ReputationState = {
-      alpha: 2,
-      beta: 1,
+      alpha: config?.priors?.alpha ?? 2,
+      beta: config?.priors?.beta ?? 1,
       tradeCount: 0,
       penalties: 0,
-      isEmailVerified: false,
+      isEmailVerified: true, // Assuming email is verified for sim focus
       isPhoneVerified: false,
     };
 
@@ -130,19 +122,15 @@ export class ReputationSimulatorService {
     // Check if any trade activity happens today
     if (Math.random() > persona.tradeFrequency) return 'No Activity';
 
-    // Handle Disputes (Penalties)
-    const isDispute = Math.random() < persona.disputeProbability;
-    if (isDispute) {
+    // Handle Disputes
+    if (Math.random() < persona.disputeProbability) {
       const config = this.configService.get<ReputationConfig>('reputation');
-      const impact = config?.penalties?.defaultImpact ?? 0.1;
-
-      state.penalties += impact;
+      state.penalties += config?.penalties?.defaultImpact ?? 0.05;
       return 'Dispute';
     }
 
     // Handle Success vs Failure
-    const isSuccess = Math.random() < persona.tradeCompletionRate;
-    if (isSuccess) {
+    if (Math.random() < persona.tradeCompletionRate) {
       state.alpha += 1;
       state.tradeCount += 1;
       return 'Success';
