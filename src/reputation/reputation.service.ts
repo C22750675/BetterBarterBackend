@@ -77,14 +77,14 @@ export class ReputationService {
       daysElapsed / (penaltyHalfLifeDays || 30),
     );
 
-    // Regression to Priors: Only decay the "excess" above/below the neutral starting point
+    // Regression to Priors: Decay moves toward neutral start, not zero
     const newAlpha = priorAlpha + (state.alpha - priorAlpha) * repDecayFactor;
     const newBeta = priorBeta + (state.beta - priorBeta) * repDecayFactor;
 
-    // Penalties decay toward zero
+    // Penalties decay toward zero (cool-off)
     const newPenalties = state.penalties * penaltyDecayFactor;
 
-    // Engagement (Experience) Preservation
+    // Engagement (Experience) Preservation logic
     const newTradeCount = decayTradeCount
       ? state.tradeCount * repDecayFactor
       : state.tradeCount;
@@ -180,10 +180,7 @@ export class ReputationService {
 
     // 1. Apply Lazy Decay first to catch up to real-time
     const decayedState = this.applyLazyDecay(user);
-    user.alpha = decayedState.alpha;
-    user.beta = decayedState.beta;
-    user.penalties = decayedState.penalties;
-    user.tradeCount = decayedState.tradeCount;
+    Object.assign(user, decayedState);
 
     const config = this.configService.get<ReputationConfig>('reputation');
 
@@ -194,8 +191,7 @@ export class ReputationService {
     } else if (type === ReputationChangeType.FAILURE) {
       user.beta += 1;
     } else if (type === ReputationChangeType.PENALTY) {
-      const impact = config?.penalties?.defaultImpact ?? 0.05;
-      user.penalties += impact;
+      user.penalties += config?.penalties?.defaultImpact ?? 0.05;
     }
 
     // 3. Final calculation

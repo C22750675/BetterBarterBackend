@@ -11,7 +11,7 @@ const reputation = () => ({
     },
     decay: {
       halfLifeDays: 60, // Time in days for parameters to decay by 50%
-      penaltyHalfLifeDays: 30, // Penalties vanish twice as fast as rep
+      penaltyHalfLifeDays: 180, // Time in days for penalties to decay by 50%
       decayTradeCount: false, // Experience is permanent
     },
     priors: {
@@ -19,7 +19,7 @@ const reputation = () => ({
       beta: 1, // Neutral failure starting point
     },
     penalties: {
-      defaultImpact: 0.05, // Impact subtracted from raw sum during a dispute
+      defaultImpact: 0.1, // Impact subtracted from raw sum during a dispute
     },
   },
 });
