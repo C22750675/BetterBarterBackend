@@ -92,7 +92,7 @@ export const MARKETPLACE_PERSONAS: PersonaBehavior[] = [
     isPhoneVerified: false,
   },
   {
-    name: 'The Seasonal Artisan (Verified)',
+    name: 'The Seasonal Trader (Verified)',
     description:
       'Works in bursts. Tests if the 90-day Alpha decay preserves their trust during gaps.',
     tradeFrequency: 0.9,
@@ -106,7 +106,7 @@ export const MARKETPLACE_PERSONAS: PersonaBehavior[] = [
     ],
   },
   {
-    name: 'The Seasonal Artisan (Unverified)',
+    name: 'The Seasonal Trader (Unverified)',
     description:
       'Works in bursts. Tests if the Alpha decay preserves their trust during gaps.',
     tradeFrequency: 0.9,
