@@ -159,7 +159,7 @@ export class ReputationService {
     if (params.isPhoneVerified) verificationScore += 0.5;
 
     // 3. Engagement: Transaction volume (Logarithmic scaling)
-    const engagementScore = Math.log10(1 + params.tradeCount) / 2; // Normalized to ~0-1 range
+    const engagementScore = Math.log10(1 + params.tradeCount) / 2; // Normalized to between 0-1 range
 
     // 4. Raw Sum (Weighted) - Penalties (Linear)
     const rawSum =
