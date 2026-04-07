@@ -2,7 +2,6 @@ import {
   Controller,
   Post,
   Body,
-  Request,
   UseGuards,
   Get,
   HttpCode,
@@ -22,8 +21,8 @@ import { UpdateProfileDto } from 'src/users/dtos/update-profile.dto';
 @Controller('auth')
 export class AuthController {
   constructor(
-    private authService: AuthService,
-    private usersService: UsersService,
+    private readonly authService: AuthService,
+    private readonly usersService: UsersService,
   ) {}
 
   // POST /auth/register
