@@ -10,8 +10,10 @@ import { Circle } from './entities/circle.entity';
 import { Membership } from './entities/membership.entity';
 import { DataSource, Repository } from 'typeorm';
 import { CreateCircleDto } from './dtos/create-circle.dto';
+import { UpdateCircleDto } from './dtos/update-circle.dto';
 import { User } from '../users/entities/user.entity';
 import { Point } from 'geojson';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
 
 @Injectable()
 export class CirclesService {
@@ -24,7 +26,8 @@ export class CirclesService {
   ) {}
 
   async create(createCircleDto: CreateCircleDto, user: User) {
-    const { name, origin, radius, color, description } = createCircleDto;
+    const { name, origin, radius, color, description, imageUrl } =
+      createCircleDto;
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -37,6 +40,7 @@ export class CirclesService {
         radius,
         color,
         description,
+        imageUrl,
       });
       const newCircle = await queryRunner.manager.save(circle);
 
@@ -53,12 +57,14 @@ export class CirclesService {
       return newCircle;
     } catch (err) {
       await queryRunner.rollbackTransaction();
-      const safeMessage =
-        err instanceof Error
-          ? err.message
-          : typeof err === 'string'
-            ? err
-            : JSON.stringify(err);
+      let safeMessage: string;
+      if (err instanceof Error) {
+        safeMessage = err.message;
+      } else if (typeof err === 'string') {
+        safeMessage = err;
+      } else {
+        safeMessage = JSON.stringify(err);
+      }
       throw new InternalServerErrorException(
         `Failed to create circle: ${safeMessage}`,
       );
@@ -87,7 +93,6 @@ export class CirclesService {
     radiusInMeters: number,
     userId?: string,
   ): Promise<any[]> {
-    // Return any[] or a DTO that extends Circle
     const [longitude, latitude] = origin.coordinates;
 
     const query = this.circleRepository
@@ -107,7 +112,6 @@ export class CirclesService {
     const circles = await query.getMany();
 
     if (userId) {
-      // Check membership for each circle
       const userMemberships = await this.membershipRepository.find({
         where: { userId },
         select: ['circleId'],
@@ -190,9 +194,21 @@ export class CirclesService {
     return { message: 'Successfully left the circle' };
   }
 
-  async update(circleId: string, updateDto: any, userId: string) {
+  async update(circleId: string, updateDto: UpdateCircleDto, userId: string) {
     await this.checkAdmin(circleId, userId);
-    const result = await this.circleRepository.update(circleId, updateDto);
+
+    const { imageUrl, ...rest } = updateDto;
+
+    // Use QueryDeepPartialEntity to ensure type safety with TypeORM's update method
+    const updateData: QueryDeepPartialEntity<Circle> = {
+      ...rest,
+    };
+
+    if (imageUrl !== undefined) {
+      updateData.imageUrl = imageUrl;
+    }
+
+    const result = await this.circleRepository.update(circleId, updateData);
     if (result.affected === 0) {
       throw new NotFoundException(`Circle with ID ${circleId} not found`);
     }

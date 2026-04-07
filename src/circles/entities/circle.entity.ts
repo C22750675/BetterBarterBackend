@@ -23,6 +23,9 @@ export class Circle {
   @Column({ type: 'text', nullable: true })
   description: string;
 
+  @Column({ nullable: true })
+  imageUrl: string;
+
   @Column({
     type: 'geography',
     spatialFeatureType: 'Point',
@@ -33,7 +36,7 @@ export class Circle {
   @Column()
   radius: number; // in meters
 
-  @Column({ default: 5.0 })
+  @Column({ default: 5 })
   reputationScore: number;
 
   @Column({ default: 0 })

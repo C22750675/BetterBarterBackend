@@ -2,7 +2,6 @@ import { Type } from 'class-transformer';
 import {
   IsArray,
   IsInt,
-  IsNotEmpty,
   IsNumber,
   IsOptional,
   IsString,
@@ -22,14 +21,23 @@ class OriginPointDto implements Point {
 
 export class UpdateCircleDto {
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   name?: string;
 
+  @IsString()
+  @IsOptional()
+  description?: string;
+
   @ValidateNested()
+  @IsOptional()
   @Type(() => OriginPointDto)
   origin?: OriginPointDto;
 
   @IsInt()
-  @IsNotEmpty()
+  @IsOptional()
   radius?: number; // Radius in meters
+
+  @IsString()
+  @IsOptional()
+  imageUrl?: string;
 }

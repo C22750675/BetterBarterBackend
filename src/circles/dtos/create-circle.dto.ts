@@ -43,4 +43,8 @@ export class CreateCircleDto {
     message: 'Color must be a valid hex code (e.g., #FF0000)',
   })
   color?: string;
+
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
 }
