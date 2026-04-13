@@ -6,14 +6,14 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Circle } from './entities/circle.entity';
-import { Membership } from './entities/membership.entity';
+import { Circle } from './entities/circle.entity.js';
+import { Membership } from './entities/membership.entity.js';
 import { DataSource, Repository } from 'typeorm';
-import { CreateCircleDto } from './dtos/create-circle.dto';
-import { UpdateCircleDto } from './dtos/update-circle.dto';
-import { User } from '../users/entities/user.entity';
+import { CreateCircleDto } from './dtos/create-circle.dto.js';
+import { UpdateCircleDto } from './dtos/update-circle.dto.js';
+import { User } from '../users/entities/user.entity.js';
 import { Point } from 'geojson';
-import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity';
+import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity.js';
 
 @Injectable()
 export class CirclesService {

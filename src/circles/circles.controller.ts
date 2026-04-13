@@ -12,12 +12,13 @@ import {
   ClassSerializerInterceptor,
   UseInterceptors,
 } from '@nestjs/common';
-import { CirclesService } from './circles.service';
-import { CreateCircleDto } from './dtos/create-circle.dto';
-import { JwtAuthGuard } from 'src/auth/decorators/jwt-auth.guard';
-import { GetUser } from '../auth/decorators/get-user.decorator';
-import { User } from '../users/entities/user.entity';
-import { FindNearbyDto } from './dtos/find-nearby.dto';
+import { CirclesService } from './circles.service.js';
+import { CreateCircleDto } from './dtos/create-circle.dto.js';
+import { UpdateCircleDto } from './dtos/update-circle.dto.js'; // Added import
+import { JwtAuthGuard } from '../auth/decorators/jwt-auth.guard.js';
+import { GetUser } from '../auth/decorators/get-user.decorator.js';
+import { User } from '../users/entities/user.entity.js';
+import { FindNearbyDto } from './dtos/find-nearby.dto.js';
 import { Point } from 'typeorm';
 
 @Controller('circles')

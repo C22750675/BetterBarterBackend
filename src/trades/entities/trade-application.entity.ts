@@ -1,4 +1,4 @@
-import { User } from 'src/users/entities/user.entity';
+import { User } from '../../users/entities/user.entity.js';
 import {
   Column,
   CreateDateColumn,
@@ -6,9 +6,10 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Relation,
 } from 'typeorm';
-import { Trade } from './trade.entity';
-import { Item } from '../../items/entities/item.entity';
+import { Trade } from './trade.entity.js';
+import { Item } from '../../items/entities/item.entity.js';
 
 export enum TradeApplicationStatus {
   PENDING = 'pending',

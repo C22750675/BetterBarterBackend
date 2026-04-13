@@ -8,10 +8,10 @@ import {
   JoinColumn,
   OneToMany,
 } from 'typeorm';
-import { User } from '../../users/entities/user.entity';
-import { Category } from './category.entity';
-import { Circle } from '../../circles/entities/circle.entity';
-import { Trade } from '../../trades/entities/trade.entity';
+import { User } from '../../users/entities/user.entity.js';
+import { Category } from './category.entity.js';
+import { Circle } from '../../circles/entities/circle.entity.js';
+import { Trade } from '../../trades/entities/trade.entity.js';
 
 @Entity()
 export class Item {

@@ -7,8 +7,8 @@ import {
   CreateDateColumn,
   Unique,
 } from 'typeorm';
-import { User } from '../../users/entities/user.entity';
-import { Trade } from './trade.entity';
+import { User } from '../../users/entities/user.entity.js';
+import { Trade } from './trade.entity.js';
 
 @Entity()
 @Unique(['raterId', 'tradeId']) // A user can only rate a specific trade once

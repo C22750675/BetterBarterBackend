@@ -5,10 +5,10 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Item } from './entities/item.entity';
-import { CreateItemDto } from './dto/create-item.dto';
-import { UpdateItemDto } from './dto/update-item.dto';
-import { Category } from './entities/category.entity';
+import { Item } from './entities/item.entity.js';
+import { CreateItemDto } from './dto/create-item.dto.js';
+import { UpdateItemDto } from './dto/update-item.dto.js';
+import { Category } from './entities/category.entity.js';
 
 @Injectable()
 export class ItemsService {

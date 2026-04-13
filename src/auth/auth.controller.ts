@@ -9,14 +9,14 @@ import {
   UnauthorizedException,
   Patch,
 } from '@nestjs/common';
-import { AuthService } from './auth.service';
-import { UsersService } from '../users/users.service';
-import { RegisterUserDto } from 'src/users/dtos/register-user.dto';
-import { JwtAuthGuard } from './decorators/jwt-auth.guard';
-import { UserPayloadDto } from './dto/user-payload.dto';
-import { GetUser } from './decorators/get-user.decorator';
-import { LoginUserDto } from 'src/users/dtos/login-user.dto';
-import { UpdateProfileDto } from 'src/users/dtos/update-profile.dto';
+import { AuthService } from './auth.service.js';
+import { UsersService } from '../users/users.service.js';
+import { RegisterUserDto } from '../users/dtos/register-user.dto.js';
+import { JwtAuthGuard } from './decorators/jwt-auth.guard.js';
+import { UserPayloadDto } from './dto/user-payload.dto.js';
+import { GetUser } from './decorators/get-user.decorator.js';
+import { LoginUserDto } from '../users/dtos/login-user.dto.js';
+import { UpdateProfileDto } from '../users/dtos/update-profile.dto.js';
 
 @Controller('auth')
 export class AuthController {

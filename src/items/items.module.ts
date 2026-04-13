@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthModule } from '../auth/auth.module';
-import { ItemsService } from './items.service';
-import { ItemsController } from './items.controller';
-import { Item } from './entities/item.entity';
-import { Category } from './entities/category.entity';
+import { AuthModule } from '../auth/auth.module.js';
+import { ItemsService } from './items.service.js';
+import { ItemsController } from './items.controller.js';
+import { Item } from './entities/item.entity.js';
+import { Category } from './entities/category.entity.js';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Item, Category]), AuthModule],

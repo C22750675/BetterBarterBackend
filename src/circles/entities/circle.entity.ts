@@ -6,11 +6,11 @@ import {
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import type { Point } from 'geojson';
-import { Membership } from './membership.entity';
-import { Item } from 'src/items/entities/item.entity';
-import { User } from 'src/users/entities/user.entity';
+import { Membership } from './membership.entity.js';
+import { Item } from '../../items/entities/item.entity.js';
+import { User } from '../../users/entities/user.entity.js';
 import { Expose } from 'class-transformer';
-import { Trade } from 'src/trades/entities/trade.entity';
+import { Trade } from '../../trades/entities/trade.entity.js';
 
 @Entity()
 export class Circle {

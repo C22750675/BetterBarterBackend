@@ -1,10 +1,10 @@
 import { Injectable, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from './entities/user.entity';
+import { User } from './entities/user.entity.js';
 import * as bcrypt from 'bcrypt';
-import { RegisterUserDto } from './dtos/register-user.dto';
-import { ValidatedUser } from 'src/auth/interfaces/validated-user.type';
+import { RegisterUserDto } from './dtos/register-user.dto.js';
+import { ValidatedUser } from '../auth/interfaces/validated-user.type.js';
 
 @Injectable()
 export class UsersService {

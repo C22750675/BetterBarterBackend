@@ -8,17 +8,17 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Item } from 'src/items/entities/item.entity';
 import { User } from 'src/users/entities/user.entity';
 import { Repository } from 'typeorm';
-import { CreateTradeDto } from './dto/create-trade.dto';
-import { Trade, TradeStatus } from './entities/trade.entity';
-import { CreateRatingDto } from './dto/create-rating.dto';
-import { Rating } from './entities/rating.entity';
-import { CreateTradeApplicationDto } from './dto/create-trade-application.dto';
+import { CreateTradeDto } from './dto/create-trade.dto.js';
+import { Trade, TradeStatus } from './entities/trade.entity.js';
+import { CreateRatingDto } from './dto/create-rating.dto.js';
+import { Rating } from './entities/rating.entity.js';
+import { CreateTradeApplicationDto } from './dto/create-trade-application.dto.js';
 import {
   TradeApplication,
   TradeApplicationStatus,
-} from './entities/trade-application.entity';
-import { ReputationService } from 'src/reputation/reputation.service';
-import { ReputationChangeType } from 'src/reputation/entities/reputation-log.entity';
+} from './entities/trade-application.entity.js';
+import { ReputationService } from '../reputation/reputation.service.js';
+import { ReputationChangeType } from '../reputation/entities/reputation-log.entity.js';
 
 @Injectable()
 export class TradesService {

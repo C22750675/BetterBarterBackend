@@ -6,7 +6,7 @@ import {
   OneToOne,
   JoinColumn,
 } from 'typeorm';
-import { Trade } from './trade.entity';
+import { Trade } from './trade.entity.js';
 
 export enum DisputeStatus {
   OPEN = 'open',

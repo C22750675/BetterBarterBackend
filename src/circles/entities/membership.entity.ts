@@ -6,11 +6,10 @@ import {
   JoinColumn,
   CreateDateColumn,
   Unique,
+  Relation,
 } from 'typeorm';
-import { User } from '../../users/entities/user.entity';
-import { Circle } from './circle.entity';
-
-// We no longer need MembershipRole
+import { User } from '../../users/entities/user.entity.js';
+import { Circle } from './circle.entity.js';
 
 @Entity()
 @Unique(['userId', 'circleId']) // A user can only join a circle once

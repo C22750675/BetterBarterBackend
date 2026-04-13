@@ -7,13 +7,13 @@ import {
   JoinColumn,
   OneToMany,
   OneToOne,
-} from 'typeorm';
-import { User } from '../../users/entities/user.entity';
-import { Item } from 'src/items/entities/item.entity';
-import { Circle } from 'src/circles/entities/circle.entity';
-import { TradeApplication } from './trade-application.entity';
-import { Dispute } from './dispute.entity';
-import { Message } from './message.entity';
+  Relation,
+import { User } from '../../users/entities/user.entity.js';
+import { Item } from '../../items/entities/item.entity.js';
+import { Circle } from '../../circles/entities/circle.entity.js';
+import { TradeApplication } from './trade-application.entity.js';
+import { Dispute } from './dispute.entity.js';
+import { Message } from './message.entity.js';
 
 export enum TradeStatus {
   PENDING = 'pending',

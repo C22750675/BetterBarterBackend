@@ -1,5 +1,5 @@
 import { Controller, Get } from '@nestjs/common';
-import { ReputationSimulatorService } from './reputation-simulator.service';
+import { ReputationSimulatorService } from './reputation-simulator.service.js';
 
 @Controller('reputation-simulator')
 export class ReputationSimulatorController {

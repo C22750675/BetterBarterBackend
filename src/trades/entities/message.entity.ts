@@ -6,8 +6,8 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { User } from '../../users/entities/user.entity';
-import { Trade } from './trade.entity';
+import { User } from '../../users/entities/user.entity.js';
+import { Trade } from './trade.entity.js';
 
 @Entity()
 export class Message {

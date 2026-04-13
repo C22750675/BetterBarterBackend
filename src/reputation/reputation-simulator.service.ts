@@ -3,12 +3,15 @@ import {
   ReputationConfig,
   ReputationService,
   ReputationState,
-} from './reputation.service';
+} from './reputation.service.js';
 import { ConfigService } from '@nestjs/config';
 import { exec } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { MARKETPLACE_PERSONAS, PersonaBehavior } from './types/personas.types';
+import {
+  MARKETPLACE_PERSONAS,
+  PersonaBehavior,
+} from './types/personas.types.js';
 
 export interface SimulationResult {
   day: number;

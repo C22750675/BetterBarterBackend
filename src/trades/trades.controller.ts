@@ -11,14 +11,14 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
-import { GetUser } from 'src/auth/decorators/get-user.decorator';
-import { JwtAuthGuard } from 'src/auth/decorators/jwt-auth.guard';
-import { User } from 'src/users/entities/user.entity';
-import { CreateTradeDto } from './dto/create-trade.dto';
-import { TradesService } from './trades.service';
-import { CreateRatingDto } from './dto/create-rating.dto';
-import { UpdateTradeStatusDto } from './dto/update-trade-status.dto';
-import { CreateTradeApplicationDto } from './dto/create-trade-application.dto';
+import { GetUser } from '../auth/decorators/get-user.decorator.js';
+import { JwtAuthGuard } from '../auth/decorators/jwt-auth.guard.js';
+import { User } from '../users/entities/user.entity.js';
+import { CreateTradeDto } from './dto/create-trade.dto.js';
+import { TradesService } from './trades.service.js';
+import { CreateRatingDto } from './dto/create-rating.dto.js';
+import { UpdateTradeStatusDto } from './dto/update-trade-status.dto.js';
+import { CreateTradeApplicationDto } from './dto/create-trade-application.dto.js';
 
 @Controller('trades')
 @UseGuards(JwtAuthGuard)

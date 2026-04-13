@@ -5,11 +5,11 @@ import {
   CreateDateColumn,
   OneToMany,
 } from 'typeorm';
-import { Item } from '../../items/entities/item.entity';
-import { Membership } from 'src/circles/entities/membership.entity';
-import { Trade } from 'src/trades/entities/trade.entity';
-import { TradeApplication } from 'src/trades/entities/trade-application.entity';
-import { ReputationLog } from 'src/reputation/entities/reputation-log.entity';
+import { Item } from '../../items/entities/item.entity.js';
+import { Membership } from '../../circles/entities/membership.entity.js';
+import { Trade } from '../../trades/entities/trade.entity.js';
+import { TradeApplication } from '../../trades/entities/trade-application.entity.js';
+import { ReputationLog } from '../../reputation/entities/reputation-log.entity.js';
 
 @Entity()
 export class User {
