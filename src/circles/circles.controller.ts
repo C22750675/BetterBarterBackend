@@ -96,7 +96,7 @@ export class CirclesController {
   @Patch(':id')
   async update(
     @Param('id', ParseUUIDPipe) circleId: string,
-    @Body() updateCircleDto: any,
+    @Body() updateCircleDto: UpdateCircleDto,
     @GetUser() user: User,
   ) {
     return this.circlesService.update(circleId, updateCircleDto, user.id);
