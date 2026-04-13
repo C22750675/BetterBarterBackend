@@ -12,30 +12,30 @@ import { Trade } from './trade.entity';
 @Entity()
 export class Message {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ type: 'text' })
-  text: string;
+  text!: string;
 
   @Column({ type: 'varchar', nullable: true })
-  imageUrl: string;
+  imageUrl!: string;
 
   @CreateDateColumn()
-  timestamp: Date;
+  timestamp!: Date;
 
   // The user who sent the message
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'senderId' })
-  sender: User;
+  sender!: User;
 
   @Column()
-  senderId: string;
+  senderId!: string;
 
   // The trade this message belongs to
   @ManyToOne(() => Trade, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'tradeId' })
-  trade: Trade;
+  trade!: Trade;
 
   @Column()
-  tradeId: string;
+  tradeId!: string;
 }

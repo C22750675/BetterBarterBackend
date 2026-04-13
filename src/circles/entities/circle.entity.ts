@@ -15,48 +15,48 @@ import { Trade } from 'src/trades/entities/trade.entity';
 @Entity()
 export class Circle {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ unique: true })
-  name: string;
+  name!: string;
 
   @Column({ type: 'text', nullable: true })
-  description: string;
+  description!: string;
 
   @Column({ nullable: true })
-  imageUrl: string;
+  imageUrl!: string;
 
   @Column({
     type: 'geography',
     spatialFeatureType: 'Point',
     srid: 4326,
   })
-  origin: Point;
+  origin!: Point;
 
   @Column()
-  radius: number; // in meters
+  radius!: number; // in meters
 
   @Column({ default: 5 })
-  reputationScore: number;
+  reputationScore!: number;
 
   @Column({ default: 0 })
-  minimumRepThreshold: number;
+  minimumRepThreshold!: number;
 
   @Column({ type: 'varchar', length: 7, default: '#3498DB' })
-  color: string;
+  color!: string;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @OneToMany(() => Membership, (membership) => membership.circle)
-  memberships: Membership[];
+  memberships!: Membership[];
 
   // A circle can have many items posted to it
   @OneToMany(() => Item, (item) => item.circle)
-  items: Item[];
+  items!: Item[];
 
   @OneToMany(() => Trade, (trade) => trade.circle)
-  trades: Trade[];
+  trades!: Trade[];
 
   @Expose() // Make this available in the JSON response
   get admins(): User[] | null {

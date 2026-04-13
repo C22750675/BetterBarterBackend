@@ -19,46 +19,46 @@ export enum TradeApplicationStatus {
 @Entity()
 export class TradeApplication {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @ManyToOne(() => User, (user) => user.tradeApplications, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'applicantId' })
-  applicant: User;
+  applicant!: User;
 
   @Column()
-  applicantId: string;
+  applicantId!: string;
 
   @ManyToOne(() => Trade, (trade) => trade.applications, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'tradeId' })
-  trade: Trade;
+  trade!: Trade;
 
   @Column()
-  tradeId: string;
+  tradeId!: string;
 
   @ManyToOne(() => Item, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'offeredItemId' })
-  offeredItem: Item;
+  offeredItem!: Item;
 
   @Column({ nullable: true })
-  offeredItemId: string;
+  offeredItemId!: string;
 
   @Column({ type: 'int', default: 1 })
-  offeredItemQuantity: number;
+  offeredItemQuantity!: number;
 
   @Column({ type: 'text', nullable: true })
-  message: string;
+  message!: string;
 
   @Column({
     type: 'enum',
     enum: TradeApplicationStatus,
     default: TradeApplicationStatus.PENDING,
   })
-  status: TradeApplicationStatus;
+  status!: TradeApplicationStatus;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 }

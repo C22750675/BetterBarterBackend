@@ -14,38 +14,38 @@ import { Trade } from './trade.entity';
 @Unique(['raterId', 'tradeId']) // A user can only rate a specific trade once
 export class Rating {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ type: 'int' }) // e.g., 1 to 5
-  score: number;
+  score!: number;
 
   @Column({ type: 'text', nullable: true })
-  comment: string;
+  comment!: string;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   // The user who GAVE the rating
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'raterId' })
-  rater: User;
+  rater!: User;
 
   @Column()
-  raterId: string;
+  raterId!: string;
 
   // The user who RECEIVED the rating
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'rateeId' })
-  ratee: User;
+  ratee!: User;
 
   @Column()
-  rateeId: string;
+  rateeId!: string;
 
   // The trade this rating is for
   @ManyToOne(() => Trade, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'tradeId' })
-  trade: Trade;
+  trade!: Trade;
 
   @Column()
-  tradeId: string;
+  tradeId!: string;
 }

@@ -14,70 +14,70 @@ import { ReputationLog } from 'src/reputation/entities/reputation-log.entity';
 @Entity()
 export class User {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ unique: true })
-  username: string;
+  username!: string;
 
   @Column({ select: false }) // Hide password by default
-  passwordHash: string;
+  passwordHash!: string;
 
   @Column({ unique: true, nullable: true })
-  email: string;
+  email!: string;
 
   @Column({ nullable: true })
-  phoneNumber: string;
+  phoneNumber!: string;
 
   @Column({ default: false })
-  isEmailVerified: boolean;
+  isEmailVerified!: boolean;
 
   @Column({ default: false })
-  isPhoneVerified: boolean;
+  isPhoneVerified!: boolean;
 
   @Column({ type: 'text', nullable: true })
-  bio: string;
+  bio!: string;
 
   @Column({ nullable: true })
-  profilePictureUrl: string;
+  profilePictureUrl!: string;
 
   @Column({ type: 'float', default: 50 })
-  reputationScore: number;
+  reputationScore!: number;
 
   @Column({ type: 'float', default: 2 })
-  alpha: number; // Cumulative Successes
+  alpha!: number; // Cumulative Successes
 
   @Column({ type: 'float', default: 1 })
-  beta: number; // Cumulative Failures
+  beta!: number; // Cumulative Failures
 
   @Column({ type: 'int', default: 0 })
-  tradeCount: number; // For Engagement Component
+  tradeCount!: number; // For Engagement Component
 
   @Column({ type: 'float', default: 0 })
-  penalties: number; // Manual severity-based deductions
+  penalties!: number; // Manual severity-based deductions
 
   @Column({ type: 'timestamp', nullable: true })
-  lastReputationUpdate: Date;
+  lastReputationUpdate!: Date;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @OneToMany(() => Item, (item) => item.owner)
-  items: Item[];
+  items!: Item[];
 
   @OneToMany(() => Membership, (membership) => membership.user)
-  memberships: Membership[];
+  memberships!: Membership[];
 
   // Trades the user created (as an admin)
   @OneToMany(() => Trade, (trade) => trade.proposer)
-  proposedTrades: Trade[];
+  proposedTrades!: Trade[];
 
   // Trades the user accepted (as a member)
   @OneToMany(() => Trade, (trade) => trade.recipient)
-  receivedTrades: Trade[];
+  receivedTrades!: Trade[];
 
   @OneToMany(() => TradeApplication, (application) => application.applicant)
-  tradeApplications: TradeApplication;
+  tradeApplications!: TradeApplication;
 
   @OneToMany(() => ReputationLog, (log) => log.user)
-  reputationLogs: ReputationLog;
+  reputationLogs!: ReputationLog;
 }

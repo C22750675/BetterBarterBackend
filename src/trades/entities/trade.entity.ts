@@ -26,72 +26,72 @@ export enum TradeStatus {
 @Entity()
 export class Trade {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({
     type: 'enum',
     enum: TradeStatus,
     default: TradeStatus.PENDING,
   })
-  status: TradeStatus;
+  status!: TradeStatus;
 
   @CreateDateColumn()
-  creationDate: Date;
+  creationDate!: Date;
 
   @Column({ type: 'timestamp', nullable: true })
-  completionDate: Date;
+  completionDate!: Date;
 
   @Column({ type: 'text', nullable: true })
-  description: string;
+  description!: string;
 
   @ManyToOne(() => User, (user) => user.proposedTrades, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'proposerId' })
-  proposer: User;
+  proposer!: User;
 
   @Column()
-  proposerId: string;
+  proposerId!: string;
 
   @ManyToOne(() => User, (user) => user.receivedTrades, {
     onDelete: 'CASCADE',
     nullable: true,
   })
   @JoinColumn({ name: 'recipientId' })
-  recipient: User;
+  recipient!: User;
 
   @Column({ nullable: true })
-  recipientId: string;
+  recipientId!: string;
 
   @Column()
-  offeredItemQuantity: number;
+  offeredItemQuantity!: number;
 
   @ManyToOne(() => Item, (item) => item.trades, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'offeredItemId' })
-  offeredItem: Item;
+  offeredItem!: Item;
 
   @Column({ nullable: true })
-  offeredItemId: string;
+  offeredItemId!: string;
 
   @ManyToOne(() => Circle, (circle) => circle.trades, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'circleId' })
-  circle: Circle;
+  circle!: Circle;
 
   @Column()
-  circleId: string;
+  circleId!: string;
 
   @Column({ default: false })
-  isRatedByProposer: boolean;
+  isRatedByProposer!: boolean;
 
   @Column({ default: false })
-  isRatedByRecipient: boolean;
+  isRatedByRecipient!: boolean;
 
   @OneToMany(() => TradeApplication, (application) => application.trade)
-  applications: TradeApplication[];
+  applications!: TradeApplication[];
 
   @OneToOne(() => Dispute, (dispute) => dispute.trade)
-  dispute: Dispute;
+  dispute!: Dispute;
 
   @OneToMany(() => Message, (message) => message.trade)
-  messages: Message[];
+  messages!: Message[];
 
   // Non-database property to hold the current user's application status
   myApplication?: TradeApplication;
