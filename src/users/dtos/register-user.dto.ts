@@ -6,7 +6,7 @@ export class RegisterUserDto {
   @Matches(/^\S+$/, {
     message: 'Username cannot contain spaces.',
   })
-  username: string;
+  username!: string;
 
   @IsString()
   @IsNotEmpty()
@@ -18,5 +18,5 @@ export class RegisterUserDto {
         'Password is too weak. It must contain an uppercase letter, a lowercase letter, a number, and a special character.',
     },
   )
-  password: string;
+  password!: string;
 }

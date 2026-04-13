@@ -10,17 +10,17 @@ import {
 export class CreateTradeDto {
   @IsUUID()
   @IsNotEmpty()
-  itemId: string;
+  itemId!: string;
 
   @IsUUID()
   @IsNotEmpty()
-  circleId: string;
+  circleId!: string;
 
   @IsInt()
   @Min(1)
-  quantity: number;
+  quantity!: number;
 
   @IsString()
   @IsOptional()
-  description: string;
+  description!: string;
 }

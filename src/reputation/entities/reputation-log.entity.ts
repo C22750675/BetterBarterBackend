@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Relation,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity.js';
 
@@ -18,30 +19,30 @@ export enum ReputationChangeType {
 @Entity('reputation_logs')
 export class ReputationLog {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column()
-  userId: string;
+  userId!: string;
 
   @ManyToOne(() => User, (user) => user.reputationLogs, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
-  user: User;
+  user!: Relation<User>;
 
   @Column({ type: 'enum', enum: ReputationChangeType })
-  changeType: ReputationChangeType;
+  changeType!: ReputationChangeType;
 
   @Column({ type: 'decimal', precision: 5, scale: 2 })
-  resultingScore: number;
+  resultingScore!: number;
 
   @Column({ type: 'float', nullable: true })
-  alphaSnapshot: number;
+  alphaSnapshot!: number;
 
   @Column({ type: 'float', nullable: true })
-  betaSnapshot: number;
+  betaSnapshot!: number;
 
   @CreateDateColumn()
-  timestamp: Date;
+  timestamp!: Date;
 
   @Column({ nullable: true })
-  reason: string;
+  reason!: string;
 }

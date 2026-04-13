@@ -10,13 +10,13 @@ import {
 export class CreateTradeApplicationDto {
   @IsUUID()
   @IsNotEmpty()
-  offeredItemId: string;
+  offeredItemId!: string;
 
   @IsInt()
   @Min(1)
-  offeredItemQuantity: number;
+  offeredItemQuantity!: number;
 
   @IsString()
   @IsOptional()
-  message: string;
+  message!: string;
 }

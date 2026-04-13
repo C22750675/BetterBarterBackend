@@ -4,7 +4,7 @@ export class CreateRatingDto {
   @IsNumber()
   @Min(1)
   @Max(5)
-  score: number;
+  score!: number;
 
   @IsString()
   @IsOptional()

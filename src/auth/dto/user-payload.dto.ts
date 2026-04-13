@@ -1,4 +1,4 @@
 export class UserPayloadDto {
-  id: string;
-  username: string;
+  id!: string;
+  username!: string;
 }

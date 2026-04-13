@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   OneToOne,
   JoinColumn,
+  Relation,
 } from 'typeorm';
 import { Trade } from './trade.entity.js';
 
@@ -14,6 +15,7 @@ export enum DisputeStatus {
 }
 
 export enum DisputeSeverity {
+  NONE = 'none', // No fault found, no reputation penalty applied
   LOW = 'low', // e.g., Late arrival, minor communication issue
   MEDIUM = 'medium', // e.g., Item not exactly as described
   HIGH = 'high', // e.g., Fraud, No-show, Item completely wrong/broken
@@ -22,40 +24,41 @@ export enum DisputeSeverity {
 @Entity()
 export class Dispute {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ type: 'text' })
-  description: string;
+  description!: string;
 
   @Column({
     type: 'enum',
     enum: DisputeStatus,
     default: DisputeStatus.OPEN,
   })
-  status: DisputeStatus;
+  status!: DisputeStatus;
 
-  // New fields for Reputation System
+  @Column()
+  reporterId!: string;
+
   @Column({ nullable: true })
-  culpritId: string; // The User ID found responsible for the dispute
+  culpritId!: string;
 
   @Column({
     type: 'enum',
     enum: DisputeSeverity,
     nullable: true,
   })
-  severity: DisputeSeverity;
+  severity!: DisputeSeverity;
 
   @Column({ type: 'timestamp', nullable: true })
-  resolvedAt: Date;
+  resolvedAt!: Date;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
-  // A dispute is always linked to one trade
   @OneToOne(() => Trade, (trade) => trade.dispute, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'tradeId' })
-  trade: Trade;
+  trade!: Relation<Trade>;
 
   @Column({ unique: true })
-  tradeId: string;
+  tradeId!: string;
 }

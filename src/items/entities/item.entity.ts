@@ -7,6 +7,7 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
+  Relation,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity.js';
 import { Category } from './category.entity.js';
@@ -16,42 +17,42 @@ import { Trade } from '../../trades/entities/trade.entity.js';
 @Entity()
 export class Item {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ type: 'varchar', length: 100 })
-  name: string;
+  name!: string;
 
   @Column({ type: 'text' })
-  description: string;
+  description!: string;
 
   @Column({ type: 'varchar', nullable: true })
-  imageUrl: string;
+  imageUrl!: string;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0.0 })
-  estimatedValue: number;
+  @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
+  estimatedValue!: number;
 
   @Column({ type: 'int', default: 1 })
-  stock: number;
+  stock!: number;
 
   @Column({ type: 'date', nullable: true })
-  bestBeforeDate: Date;
+  bestBeforeDate!: Date;
 
   @Column({ type: 'date', nullable: true })
-  useByDate: Date;
+  useByDate!: Date;
 
   @CreateDateColumn()
-  createdAt: Date;
+  createdAt!: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updatedAt!: Date;
 
   // Many items belong to one user (owner)
   @ManyToOne(() => User, (user) => user.items, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'ownerId' })
-  owner: User;
+  owner!: Relation<User>;
 
   @Column()
-  ownerId: string;
+  ownerId!: string;
 
   // Many items can belong to one category
   @ManyToOne(() => Category, (category) => category.items, {
@@ -59,10 +60,10 @@ export class Item {
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'categoryId' })
-  category: Category;
+  category!: Category;
 
   @Column({ nullable: true })
-  categoryId: string;
+  categoryId!: string;
 
   // Many items can be posted to one circle
   @ManyToOne(() => Circle, (circle) => circle.items, {
@@ -70,11 +71,11 @@ export class Item {
     onDelete: 'SET NULL', // If a circle is deleted, the item becomes 'un-posted'
   })
   @JoinColumn({ name: 'circleId' })
-  circle: Circle;
+  circle!: Circle;
 
   @Column({ nullable: true })
-  circleId: string;
+  circleId!: string;
 
   @OneToMany(() => Trade, (trade) => trade.offeredItem)
-  trades: Trade[];
+  trades!: Trade[];
 }

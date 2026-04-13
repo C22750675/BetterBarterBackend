@@ -15,27 +15,27 @@ import { Circle } from './circle.entity.js';
 @Unique(['userId', 'circleId']) // A user can only join a circle once
 export class Membership {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ default: false })
-  isAdmin: boolean;
+  isAdmin!: boolean;
 
   @CreateDateColumn()
-  joinDate: Date;
+  joinDate!: Date;
 
   @ManyToOne(() => User, (user) => user.memberships, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'userId' })
-  user: User;
+  user!: Relation<User>;
 
   @Column()
-  userId: string;
+  userId!: string;
 
   @ManyToOne(() => Circle, (circle) => circle.memberships, {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'circleId' })
-  circle: Circle;
+  circle!: Relation<Circle>;
 
   @Column()
-  circleId: string;
+  circleId!: string;
 }

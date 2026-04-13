@@ -14,29 +14,29 @@ import { Point } from 'geojson';
 // A DTO for the 'origin' Point object
 class OriginPointDto implements Point {
   @IsString()
-  type: 'Point';
+  type!: 'Point';
 
   @IsArray()
   @IsNumber({}, { each: true })
-  coordinates: [number, number]; // [longitude, latitude]
+  coordinates!: [number, number]; // [longitude, latitude]
 }
 
 export class CreateCircleDto {
   @IsString()
   @IsNotEmpty()
-  name: string;
+  name!: string;
 
   @IsString()
   @IsNotEmpty()
-  description: string;
+  description!: string;
 
   @ValidateNested()
   @Type(() => OriginPointDto)
-  origin: OriginPointDto;
+  origin!: OriginPointDto;
 
   @IsInt()
   @IsNotEmpty()
-  radius: number; // Radius in meters
+  radius!: number; // Radius in meters
 
   @IsOptional()
   @Matches(/^#(?:[0-9a-fA-F]{3}){1,2}$/, {

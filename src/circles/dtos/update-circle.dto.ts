@@ -12,11 +12,11 @@ import { Point } from 'geojson';
 // A DTO for the 'origin' Point object
 class OriginPointDto implements Point {
   @IsString()
-  type: 'Point';
+  type!: 'Point';
 
   @IsArray()
   @IsNumber({}, { each: true })
-  coordinates: [number, number]; // [longitude, latitude]
+  coordinates!: [number, number]; // [longitude, latitude]
 }
 
 export class UpdateCircleDto {

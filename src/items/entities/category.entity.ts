@@ -11,10 +11,10 @@ import { Item } from './item.entity.js';
 @Entity()
 export class Category {
   @PrimaryGeneratedColumn('uuid')
-  id: string;
+  id!: string;
 
   @Column({ type: 'varchar', length: 50, unique: true })
-  name: string;
+  name!: string;
 
   // Self-referencing relationship for sub-categories
   @ManyToOne(() => Category, (category) => category.childCategories, {
@@ -22,14 +22,14 @@ export class Category {
     onDelete: 'SET NULL',
   })
   @JoinColumn({ name: 'parentCategoryId' })
-  parentCategory: Category;
+  parentCategory!: Category;
 
   @Column({ nullable: true })
-  parentCategoryId: string;
+  parentCategoryId!: string;
 
   @OneToMany(() => Category, (category) => category.parentCategory)
-  childCategories: Category[];
+  childCategories!: Category[];
 
   @OneToMany(() => Item, (item) => item.category)
-  items: Item[];
+  items!: Item[];
 }

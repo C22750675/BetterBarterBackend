@@ -3,5 +3,5 @@ import { TradeStatus } from '../entities/trade.entity.js';
 
 export class UpdateTradeStatusDto {
   @IsEnum(TradeStatus)
-  status: TradeStatus;
+  status!: TradeStatus;
 }

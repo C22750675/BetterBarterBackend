@@ -17,16 +17,16 @@ export class CreateItemDto {
   @IsNotEmpty()
   @MinLength(1)
   @MaxLength(100)
-  name: string;
+  name!: string;
 
   @IsString()
   @IsNotEmpty()
   @MinLength(5)
-  description: string;
+  description!: string;
 
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0.01)
-  estimatedValue: number;
+  estimatedValue!: number;
 
   @IsOptional()
   @IsString()
@@ -35,7 +35,7 @@ export class CreateItemDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  stock: number;
+  stock!: number;
 
   @IsOptional()
   @IsString()
@@ -55,5 +55,5 @@ export class CreateItemDto {
 
   @IsOptional()
   @IsUUID()
-  categoryId: string;
+  categoryId!: string;
 }
