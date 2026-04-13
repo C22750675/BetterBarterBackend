@@ -6,11 +6,12 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
-import { User } from '../users/entities/user.entity';
+import { User } from '../users/entities/user.entity.js';
 import {
   ReputationLog,
   ReputationChangeType,
-} from './entities/reputation-log.entity';
+} from './entities/reputation-log.entity.js';
+import { DisputeSeverity } from '../trades/entities/dispute.entity.js';
 
 export interface ReputationConfig {
   weights: {

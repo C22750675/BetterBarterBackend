@@ -2,8 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan } from 'typeorm';
-import { User } from '../users/entities/user.entity';
-import { ReputationService } from './reputation.service';
+import { User } from '../users/entities/user.entity.js';
+import { ReputationService } from './reputation.service.js';
 
 @Injectable()
 export class ReputationScheduler {

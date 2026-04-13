@@ -5,8 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Item } from 'src/items/entities/item.entity';
-import { User } from 'src/users/entities/user.entity';
+import { Item } from '../items/entities/item.entity.js';
+import { User } from '../users/entities/user.entity.js';
 import { Repository } from 'typeorm';
 import { CreateTradeDto } from './dto/create-trade.dto.js';
 import { Trade, TradeStatus } from './entities/trade.entity.js';
