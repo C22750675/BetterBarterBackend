@@ -1,15 +1,16 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UsersModule } from './users/users.module';
-import { ItemsModule } from './items/items.module';
-import { CirclesModule } from './circles/circles.module';
-import { TradesModule } from './trades/trades.module';
-import { AuthModule } from './auth/auth.module';
-import { UploadsModule } from './uploads/uploads.module';
-import { ReputationModule } from './reputation/reputation.module';
-import { ReputationSimulatorService } from './reputation/reputation-simulator.service';
-import reputationConfig from './config/reputation.config';
+
+import { UsersModule } from './users/users.module.js';
+import { ItemsModule } from './items/items.module.js';
+import { CirclesModule } from './circles/circles.module.js';
+import { TradesModule } from './trades/trades.module.js';
+import { AuthModule } from './auth/auth.module.js';
+import { UploadsModule } from './uploads/uploads.module.js';
+import { ReputationModule } from './reputation/reputation.module.js';
+import { ReputationSimulatorService } from './reputation/reputation-simulator.service.js';
+import reputationConfig from './config/reputation.config.js';
 
 @Module({
   imports: [
@@ -30,7 +31,7 @@ import reputationConfig from './config/reputation.config';
         username: configService.get<string>('DB_USERNAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_NAME'),
-        entities: [__dirname + '/**/*.entity{.ts,.js}'],
+        autoLoadEntities: true,
         synchronize: true,
       }),
       // This tells NestJS to inject the ConfigService into our useFactory function
@@ -44,7 +45,6 @@ import reputationConfig from './config/reputation.config';
     TradesModule,
     AuthModule,
     UploadsModule,
-    CirclesModule,
     ReputationModule,
   ],
   controllers: [],
