@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Relation,
 } from 'typeorm';
 import { User } from '../../users/entities/user.entity.js';
 import { Trade } from './trade.entity.js';
@@ -26,7 +27,7 @@ export class Message {
   // The user who sent the message
   @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'senderId' })
-  sender!: User;
+  sender!: Relation<User>;
 
   @Column()
   senderId!: string;
@@ -34,7 +35,7 @@ export class Message {
   // The trade this message belongs to
   @ManyToOne(() => Trade, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'tradeId' })
-  trade!: Trade;
+  trade!: Relation<Trade>;
 
   @Column()
   tradeId!: string;

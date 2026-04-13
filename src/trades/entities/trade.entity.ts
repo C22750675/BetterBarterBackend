@@ -47,7 +47,7 @@ export class Trade {
 
   @ManyToOne(() => User, (user) => user.proposedTrades, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'proposerId' })
-  proposer!: User;
+  proposer!: Relation<User>;
 
   @Column()
   proposerId!: string;
@@ -57,7 +57,7 @@ export class Trade {
     nullable: true,
   })
   @JoinColumn({ name: 'recipientId' })
-  recipient!: User;
+  recipient!: Relation<User>;
 
   @Column({ nullable: true })
   recipientId!: string;
@@ -67,14 +67,14 @@ export class Trade {
 
   @ManyToOne(() => Item, (item) => item.trades, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'offeredItemId' })
-  offeredItem!: Item;
+  offeredItem!: Relation<Item>;
 
   @Column({ nullable: true })
   offeredItemId!: string;
 
   @ManyToOne(() => Circle, (circle) => circle.trades, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'circleId' })
-  circle!: Circle;
+  circle!: Relation<Circle>;
 
   @Column()
   circleId!: string;

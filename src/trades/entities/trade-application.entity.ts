@@ -26,7 +26,7 @@ export class TradeApplication {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'applicantId' })
-  applicant!: User;
+  applicant!: Relation<User>;
 
   @Column()
   applicantId!: string;
@@ -35,14 +35,14 @@ export class TradeApplication {
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'tradeId' })
-  trade!: Trade;
+  trade!: Relation<Trade>;
 
   @Column()
   tradeId!: string;
 
   @ManyToOne(() => Item, { onDelete: 'SET NULL' })
   @JoinColumn({ name: 'offeredItemId' })
-  offeredItem!: Item;
+  offeredItem!: Relation<Item>;
 
   @Column({ nullable: true })
   offeredItemId!: string;
