@@ -8,8 +8,8 @@ import { ValidatedUser } from './interfaces/validated-user.type.js';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
-    private configService: ConfigService,
-    private usersService: UsersService,
+    configService: ConfigService,
+    private readonly usersService: UsersService,
   ) {
     // Get the secret from the config service first
     const secret = configService.get<string>('JWT_SECRET');

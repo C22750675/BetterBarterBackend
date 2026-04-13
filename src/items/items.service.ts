@@ -14,9 +14,9 @@ import { Category } from './entities/category.entity.js';
 export class ItemsService {
   constructor(
     @InjectRepository(Item)
-    private itemsRepository: Repository<Item>,
+    private readonly itemsRepository: Repository<Item>,
     @InjectRepository(Category)
-    private categoriesRepository: Repository<Category>,
+    private readonly categoriesRepository: Repository<Category>,
   ) {}
 
   /**

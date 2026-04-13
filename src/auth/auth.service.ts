@@ -7,8 +7,8 @@ import { ValidatedUser } from './interfaces/validated-user.type.js';
 @Injectable()
 export class AuthService {
   constructor(
-    private usersService: UsersService,
-    private jwtService: JwtService,
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
   ) {}
 
   async validateUser(

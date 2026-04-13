@@ -8,9 +8,9 @@ import { Repository } from 'typeorm';
 export class ChatService {
   constructor(
     @InjectRepository(Trade)
-    private tradeRepository: Repository<Trade>,
+    private readonly tradeRepository: Repository<Trade>,
     @InjectRepository(Message)
-    private messageRepository: Repository<Message>,
+    private readonly messageRepository: Repository<Message>,
   ) {}
 
   // Fetch all trades where the user is a participant (Proposer OR Recipient)
@@ -38,7 +38,7 @@ export class ChatService {
       // but here we sort in memory for simplicity on the trade list.
       const lastMsg =
         trade.messages && trade.messages.length > 0
-          ? trade.messages.sort(
+          ? trade.messages.toSorted(
               (a, b) => b.timestamp.getTime() - a.timestamp.getTime(),
             )[0]
           : null;

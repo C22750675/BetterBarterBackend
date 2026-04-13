@@ -10,7 +10,7 @@ import { ValidatedUser } from '../auth/interfaces/validated-user.type.js';
 export class UsersService {
   constructor(
     @InjectRepository(User)
-    private usersRepository: Repository<User>,
+    private readonly usersRepository: Repository<User>,
   ) {}
 
   // Find a user by their username, explicitly selecting the passwordHash
