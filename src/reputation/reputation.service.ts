@@ -160,7 +160,7 @@ export class ReputationService {
     if (params.isPhoneVerified) verificationScore += 0.5;
 
     // 3. Engagement: Transaction volume (Logarithmic scaling)
-    const engagementScore = Math.log10(1 + params.tradeCount) / 2; // Normalized to between 0-1 range
+    const engagementScore = Math.log10(1 + params.tradeCount) / 2;
 
     // 4. Raw Sum (Weighted) - Penalties (Linear)
     const rawSum =
@@ -175,34 +175,44 @@ export class ReputationService {
   }
 
   /**
-   * Main entry point for reputation updates triggered by trade events.
-   * Implements Lazy Decay before applying the new event.
+   * Main entry point for reputation updates.
+   * Handles scaling penalties based on dispute severity (NONE, LOW, MEDIUM, HIGH).
    */
   async updateReputation(
     userId: string,
     type: ReputationChangeType,
     reason?: string,
+    severity?: DisputeSeverity,
   ) {
     const user = await this.userRepo.findOneBy({ id: userId });
     if (!user) return;
 
-    // 1. Apply Lazy Decay
     const decayedState = this.applyLazyDecay(user);
     Object.assign(user, decayedState);
 
     const config = this.configService.get<ReputationConfig>('reputation');
+    const basePenalty = config?.penalties?.defaultImpact ?? 0.1;
 
-    // 2. Apply new event
     if (type === ReputationChangeType.SUCCESS) {
       user.alpha += 1;
       user.tradeCount += 1;
     } else if (type === ReputationChangeType.FAILURE) {
       user.beta += 1;
     } else if (type === ReputationChangeType.PENALTY) {
-      user.penalties += config?.penalties?.defaultImpact ?? 0.05;
+      let multiplier = 1;
+
+      // Admin-controlled scaling
+      if (severity === DisputeSeverity.NONE) {
+        multiplier = 0; // No impact on the actual penalty score
+      } else if (severity === DisputeSeverity.LOW) {
+        multiplier = 0.5;
+      } else if (severity === DisputeSeverity.HIGH) {
+        multiplier = 2.5;
+      }
+
+      user.penalties += basePenalty * multiplier;
     }
 
-    // 3. Final calculation
     user.reputationScore = this.calculateScore({
       alpha: user.alpha,
       beta: user.beta,
@@ -222,7 +232,9 @@ export class ReputationService {
       resultingScore: user.reputationScore,
       alphaSnapshot: user.alpha,
       betaSnapshot: user.beta,
-      reason,
+      reason: severity
+        ? `[Resolution: ${severity.toUpperCase()}] ${reason}`
+        : reason,
     });
   }
 }
