@@ -19,7 +19,7 @@ import { Message } from './message.entity.js';
 export enum TradeStatus {
   PENDING = 'pending',
   ACCEPTED = 'accepted',
-  REJECTED = 'rejected',
+  CANCELLED = 'cancelled',
   COMPLETED = 'completed',
   DISPUTED = 'disputed',
 }
