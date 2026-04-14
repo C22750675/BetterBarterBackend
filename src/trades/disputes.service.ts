@@ -11,6 +11,7 @@ import { Trade, TradeStatus } from './entities/trade.entity.js';
 import { Membership } from '../circles/entities/membership.entity.js';
 import { CreateDisputeDto } from './dto/create-dispute.dto.js';
 import { ResolveDisputeDto } from './dto/resolve-dispute.dto.js';
+import { GetDisputesFilterDto } from './dto/get-disputes-filter.dto.js';
 import { ReputationService } from '../reputation/reputation.service.js';
 import { ReputationChangeType } from '../reputation/entities/reputation-log.entity.js';
 
@@ -25,6 +26,66 @@ export class DisputesService {
     private readonly membershipRepo: Repository<Membership>,
     private readonly reputationService: ReputationService,
   ) {}
+
+  /**
+   * Fetches a list of disputes for the circles where the user is an admin.
+   */
+  async findAdminDisputes(adminId: string, filterDto: GetDisputesFilterDto) {
+    const { status, circleId } = filterDto;
+
+    const query = this.disputeRepo
+      .createQueryBuilder('dispute')
+      .innerJoinAndSelect('dispute.trade', 'trade')
+      .innerJoin('trade.circle', 'circle')
+      .innerJoin('circle.memberships', 'membership')
+      // Only fetch if the user is an admin of the circle the trade belongs to
+      .where('membership.userId = :adminId', { adminId })
+      .andWhere('membership.isAdmin = :isAdmin', { isAdmin: true });
+
+    if (status) {
+      query.andWhere('dispute.status = :status', { status });
+    }
+
+    if (circleId) {
+      query.andWhere('trade.circleId = :circleId', { circleId });
+    }
+
+    // Show newest disputes first
+    query.orderBy('dispute.createdAt', 'DESC');
+
+    return query.getMany();
+  }
+
+  /**
+   * Fetches a highly detailed view of a single dispute for the admin dashboard.
+   */
+  async findOneDetailed(disputeId: string, adminId: string) {
+    const dispute = await this.disputeRepo
+      .createQueryBuilder('dispute')
+      .innerJoinAndSelect('dispute.trade', 'trade')
+      .innerJoinAndSelect('trade.proposer', 'proposer')
+      .innerJoinAndSelect('trade.recipient', 'recipient')
+      .leftJoinAndSelect('trade.offeredItem', 'offeredItem')
+      .leftJoinAndSelect('trade.messages', 'messages') // Load chat logs for evidence
+      .innerJoin('trade.circle', 'circle')
+      .innerJoin('circle.memberships', 'membership')
+      .where('dispute.id = :disputeId', { disputeId })
+      // Security Check
+      .andWhere('membership.userId = :adminId', { adminId })
+      .andWhere('membership.isAdmin = :isAdmin', { isAdmin: true })
+      // Sort messages chronologically
+      .orderBy('dispute.createdAt', 'DESC')
+      .addOrderBy('messages.timestamp', 'ASC')
+      .getOne();
+
+    if (!dispute) {
+      throw new NotFoundException(
+        'Dispute not found, or you do not have admin access to view it.',
+      );
+    }
+
+    return dispute;
+  }
 
   /**
    * Opens a new dispute on a trade.

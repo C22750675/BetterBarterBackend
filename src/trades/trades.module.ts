@@ -11,6 +11,10 @@ import { Message } from './entities/message.entity.js';
 import { ChatService } from './chat.service.js';
 import { ChatController } from './chat.controller.js';
 import { ReputationModule } from '../reputation/reputation.module.js';
+import { DisputesController } from './disputes.controller.js';
+import { Dispute } from './entities/dispute.entity.js';
+import { Membership } from '../circles/entities/membership.entity.js';
+import { DisputesService } from './disputes.service.js';
 
 @Module({
   imports: [
@@ -21,10 +25,12 @@ import { ReputationModule } from '../reputation/reputation.module.js';
       Rating,
       TradeApplication,
       Message,
+      Dispute,
+      Membership,
     ]),
     ReputationModule,
   ],
-  controllers: [TradesController, ChatController],
-  providers: [TradesService, ChatService],
+  controllers: [TradesController, ChatController, DisputesController],
+  providers: [TradesService, ChatService, DisputesService],
 })
 export class TradesModule {}
