@@ -63,7 +63,7 @@ export class TradesService {
    * Logic:
    * 1. Ensure trade exists.
    * 2. Ensure the user is the original proposer.
-   * 3. Ensure the trade is still PENDING (not accepted/rejected/disputed).
+   * 3. Ensure the trade is still PENDING.
    */
   async update(tradeId: string, dto: UpdateTradeDto, userId: string) {
     const trade = await this.tradeRepo.findOne({
@@ -86,14 +86,41 @@ export class TradesService {
       );
     }
 
-    // Apply updates
-    trade.id = tradeId;
     trade.offeredItemQuantity = dto.quantity;
     if (dto.description !== undefined) {
       trade.description = dto.description;
     }
 
     return this.tradeRepo.save(trade);
+  }
+
+  /**
+   * Permanently deletes a trade listing.
+   * Only allowed for PENDING trades by the proposer.
+   */
+  async remove(tradeId: string, userId: string) {
+    const trade = await this.tradeRepo.findOne({
+      where: { id: tradeId },
+    });
+
+    if (!trade) {
+      throw new NotFoundException(`Trade with ID ${tradeId} not found`);
+    }
+
+    // Security check: only proposer can delete
+    if (trade.proposerId !== userId) {
+      throw new ForbiddenException('You can only delete trades you proposed');
+    }
+
+    // Status check: only pending trades can be deleted
+    if (trade.status !== TradeStatus.PENDING) {
+      throw new BadRequestException(
+        `Cannot delete a trade that is already ${trade.status}`,
+      );
+    }
+
+    await this.tradeRepo.remove(trade);
+    return { message: 'Trade listing deleted successfully' };
   }
 
   // Accepts userId to check for existing applications

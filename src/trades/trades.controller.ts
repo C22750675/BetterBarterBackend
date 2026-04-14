@@ -44,6 +44,17 @@ export class TradesController {
     return this.tradesService.update(id, updateTradeDto, user.id);
   }
 
+  /**
+   * Facilitates the frontend deleteTrade request.
+   */
+  @Delete(':tradeId')
+  async remove(
+    @Param('tradeId', ParseUUIDPipe) tradeId: string,
+    @GetUser() user: User,
+  ) {
+    return this.tradesService.remove(tradeId, user.id);
+  }
+
   @Get('circle/:circleId')
   async findByCircle(
     @Param('circleId', ParseUUIDPipe) circleId: string,
