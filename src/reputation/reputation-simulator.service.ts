@@ -1,9 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import {
-  ReputationConfig,
-  ReputationService,
-  ReputationState,
-} from './reputation.service.js';
+import { ReputationService, ReputationState } from './reputation.service.js';
 import { ConfigService } from '@nestjs/config';
 import { exec } from 'node:child_process';
 import * as fs from 'node:fs';
@@ -12,11 +8,13 @@ import {
   MARKETPLACE_PERSONAS,
   PersonaBehavior,
 } from './types/personas.types.js';
+import { ReputationConfig } from '../config/reputation.config.js';
 
 export interface SimulationResult {
   day: number;
   alpha: number;
   beta: number;
+  penaltyWeight: number;
   score: number;
   event: string;
 }
@@ -75,7 +73,7 @@ export class ReputationSimulatorService {
       alpha: config?.priors?.alpha ?? 2,
       beta: config?.priors?.beta ?? 1,
       tradeCount: 0,
-      penalties: 0,
+      penaltyWeight: 0,
       isEmailVerified: persona.isEmailVerified,
       isPhoneVerified: persona.isPhoneVerified,
     };
@@ -83,17 +81,29 @@ export class ReputationSimulatorService {
     const history: SimulationResult[] = [];
 
     for (let day = 1; day <= 730; day++) {
-      // 1. Apply shared decay logic from the main service
-      state = this.reputationService.applyDecay(state);
+      // 1. Apply shared decay logic for alpha/beta/trades
+      const decayedBase = this.reputationService.applyDecay(state, 1);
 
-      // 2. Process the day's events based on persona behavior
+      // 2. Apply penalty weight decay manually for the simulation
+      // Based on the same half-life logic used in the main service
+      const penaltyHalfLife = config?.decay?.penaltyHalfLifeDays || 30;
+      const penaltyDecayFactor = Math.pow(0.5, 1 / penaltyHalfLife);
+      const newPenaltyWeight = state.penaltyWeight * penaltyDecayFactor;
+
+      state = {
+        ...decayedBase,
+        penaltyWeight: newPenaltyWeight,
+      };
+
+      // 3. Process the day's events based on persona behavior
       const eventLabel = this.processProbabilisticDay(persona, day, state);
 
-      // 3. Record snapshot
+      // 4. Record snapshot
       history.push({
         day,
         alpha: Number(state.alpha.toFixed(4)),
         beta: Number(state.beta.toFixed(4)),
+        penaltyWeight: Number(state.penaltyWeight.toFixed(4)),
         score: this.reputationService.calculateScore(state),
         event: eventLabel,
       });
@@ -109,6 +119,8 @@ export class ReputationSimulatorService {
     day: number,
     state: ReputationState,
   ): string {
+    const config = this.configService.get<ReputationConfig>('reputation');
+
     // Check for scheduled inactivity
     const isInactive = persona.inactivityPeriods?.some(
       (p) => day >= p.startDay && day <= p.endDay,
@@ -119,9 +131,11 @@ export class ReputationSimulatorService {
     if (Math.random() > persona.tradeFrequency) return 'No Activity';
 
     // Handle Disputes
+    // In the simulation, we assume a "Medium" severity impact for probabilistic disputes
     if (Math.random() < persona.disputeProbability) {
-      const config = this.configService.get<ReputationConfig>('reputation');
-      state.penalties += config?.penalties?.defaultImpact ?? 0.05;
+      // Fetch the absolute impact for 'medium' severity from the updated config
+      const mediumImpact = config?.penalties?.severities?.medium ?? 0.1;
+      state.penaltyWeight += mediumImpact;
       return 'Dispute';
     }
 

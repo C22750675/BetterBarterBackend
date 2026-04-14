@@ -10,6 +10,7 @@ import { Membership } from '../../circles/entities/membership.entity.js';
 import { Trade } from '../../trades/entities/trade.entity.js';
 import { TradeApplication } from '../../trades/entities/trade-application.entity.js';
 import { ReputationLog } from '../../reputation/entities/reputation-log.entity.js';
+import { Penalty } from './penalty.entity.js';
 
 @Entity()
 export class User {
@@ -19,7 +20,7 @@ export class User {
   @Column({ unique: true })
   username!: string;
 
-  @Column({ select: false }) // Hide password by default
+  @Column({ select: false })
   passwordHash!: string;
 
   @Column({ unique: true, nullable: true })
@@ -44,22 +45,22 @@ export class User {
   reputationScore!: number;
 
   @Column({ type: 'float', default: 2 })
-  alpha!: number; // Cumulative Successes
+  alpha!: number; // Successes
 
   @Column({ type: 'float', default: 1 })
-  beta!: number; // Cumulative Failures
+  beta!: number; // Failures
 
   @Column({ type: 'int', default: 0 })
-  tradeCount!: number; // For Engagement Component
-
-  @Column({ type: 'float', default: 0 })
-  penalties!: number; // Manual severity-based deductions
+  tradeCount!: number;
 
   @Column({ type: 'timestamp', nullable: true })
   lastReputationUpdate!: Date;
 
   @CreateDateColumn()
   createdAt!: Date;
+
+  @OneToMany(() => Penalty, (penalty) => penalty.user)
+  penaltyHistory!: Penalty[];
 
   @OneToMany(() => Item, (item) => item.owner)
   items!: Item[];
@@ -76,8 +77,8 @@ export class User {
   receivedTrades!: Trade[];
 
   @OneToMany(() => TradeApplication, (application) => application.applicant)
-  tradeApplications!: TradeApplication;
+  tradeApplications!: TradeApplication[];
 
   @OneToMany(() => ReputationLog, (log) => log.user)
-  reputationLogs!: ReputationLog;
+  reputationLogs!: ReputationLog[];
 }

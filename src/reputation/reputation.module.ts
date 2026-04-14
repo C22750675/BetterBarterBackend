@@ -9,10 +9,18 @@ import { Dispute } from '../trades/entities/dispute.entity.js';
 import { ReputationLog } from './entities/reputation-log.entity.js';
 import { ReputationSimulatorService } from './reputation-simulator.service.js';
 import { ReputationSimulatorController } from './reputation-simulator.controller.js';
+import { Penalty } from '../users/entities/penalty.entity.js';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, Rating, Trade, Dispute, ReputationLog]),
+    TypeOrmModule.forFeature([
+      User,
+      Rating,
+      Trade,
+      Dispute,
+      ReputationLog,
+      Penalty,
+    ]),
   ],
   controllers: [ReputationSimulatorController],
   providers: [

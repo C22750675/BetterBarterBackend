@@ -7,42 +7,19 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { User } from '../users/entities/user.entity.js';
+import { Penalty } from '../users/entities/penalty.entity.js';
 import {
   ReputationLog,
   ReputationChangeType,
 } from './entities/reputation-log.entity.js';
 import { DisputeSeverity } from '../trades/entities/dispute.entity.js';
-
-export interface ReputationConfig {
-  weights: {
-    history: number;
-    verification: number;
-    engagement: number;
-  };
-  sigmoid: {
-    k: number;
-    x0: number;
-  };
-  decay: {
-    alphaHalfLifeDays: number;
-    betaHalfLifeDays: number;
-    penaltyHalfLifeDays: number;
-    decayTradeCount: boolean;
-  };
-  priors: {
-    alpha: number;
-    beta: number;
-  };
-  penalties: {
-    defaultImpact: number;
-  };
-}
+import { ReputationConfig } from '../config/reputation.config.js';
 
 export interface ReputationState {
   alpha: number;
   beta: number;
   tradeCount: number;
-  penalties: number;
+  penaltyWeight: number; // Calculated sum of decayed penalties
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
 }
@@ -53,97 +30,108 @@ export class ReputationService {
 
   constructor(
     @InjectRepository(User) private readonly userRepo: Repository<User>,
+    @InjectRepository(Penalty)
+    private readonly penaltyRepo: Repository<Penalty>,
     @InjectRepository(ReputationLog)
     private readonly logRepo: Repository<ReputationLog>,
     private readonly configService: ConfigService,
   ) {}
 
   /**
-   * Centralized logic for applying time decay.
-   * Regression to Priors with asymmetrical alpha/beta decay + Penalty Cool-off.
+   * Calculates the current cumulative penalty weight for a user.
+   * Uses absolute values from config and applies decay per penalty.
+   */
+  public calculateCurrentPenaltyWeight(penalties: Penalty[]): number {
+    const config = this.configService.get<ReputationConfig>('reputation');
+    if (!config || !penalties) return 0;
+
+    const severityMap = config.penalties.severities;
+    const halfLife = config.decay.penaltyHalfLifeDays || 30;
+    const now = Date.now();
+
+    return penalties
+      .filter((p) => p.isActive)
+      .reduce((sum, penalty) => {
+        // Get the impact directly from config based on the severity enum key
+        const initialImpact = severityMap[penalty.severity] ?? 0;
+
+        const msElapsed = now - penalty.createdAt.getTime();
+        const daysElapsed = msElapsed / (1000 * 60 * 60 * 24);
+        const decayFactor = Math.pow(0.5, daysElapsed / halfLife);
+
+        return sum + initialImpact * decayFactor;
+      }, 0);
+  }
+
+  /**
+   * Applies decay to successes, failures, and trade counts.
    */
   public applyDecay(
     state: ReputationState,
     daysElapsed: number = 1,
-  ): ReputationState {
+  ): Omit<ReputationState, 'penaltyWeight'> {
     const config = this.configService.get<ReputationConfig>('reputation');
     if (!config) return state;
 
-    const {
-      alphaHalfLifeDays,
-      betaHalfLifeDays,
-      penaltyHalfLifeDays,
-      decayTradeCount,
-    } = config.decay;
+    const { alphaHalfLifeDays, betaHalfLifeDays, decayTradeCount } =
+      config.decay;
     const { alpha: priorAlpha, beta: priorBeta } = config.priors;
 
-    // Calculate independent decay factors for successes and failures
     const alphaDecayFactor = Math.pow(0.5, daysElapsed / alphaHalfLifeDays);
     const betaDecayFactor = Math.pow(0.5, daysElapsed / betaHalfLifeDays);
-    const penaltyDecayFactor = Math.pow(
-      0.5,
-      daysElapsed / (penaltyHalfLifeDays || 30),
-    );
 
-    // Regression to Priors: Decay moves toward neutral start using independent rates
     const newAlpha = priorAlpha + (state.alpha - priorAlpha) * alphaDecayFactor;
     const newBeta = priorBeta + (state.beta - priorBeta) * betaDecayFactor;
 
-    // Penalties decay toward zero (cool-off)
-    const newPenalties = state.penalties * penaltyDecayFactor;
-
-    // Engagement (Experience) Preservation logic
-    // Using alpha decay factor as proxy for general engagement if enabled
     const newTradeCount = decayTradeCount
       ? state.tradeCount * alphaDecayFactor
       : state.tradeCount;
 
     return {
-      ...state,
       alpha: Math.max(0, newAlpha),
       beta: Math.max(0, newBeta),
       tradeCount: newTradeCount,
-      penalties: Math.max(0, newPenalties),
+      isEmailVerified: state.isEmailVerified,
+      isPhoneVerified: state.isPhoneVerified,
     };
   }
 
-  /**
-   * Applies decay lazily based on the time difference since the last update.
-   */
   public applyLazyDecay(user: User): ReputationState {
     const now = new Date();
     const lastUpdate = user.lastReputationUpdate || user.createdAt || now;
     const msElapsed = now.getTime() - lastUpdate.getTime();
     const daysElapsed = msElapsed / (1000 * 60 * 60 * 24);
 
-    // Only apply if at least a significant fraction of a day has passed
+    const penaltyWeight = this.calculateCurrentPenaltyWeight(
+      user.penaltyHistory,
+    );
+
     if (daysElapsed < 0.01) {
       return {
         alpha: user.alpha,
         beta: user.beta,
         tradeCount: user.tradeCount,
-        penalties: user.penalties,
+        penaltyWeight,
         isEmailVerified: user.isEmailVerified,
         isPhoneVerified: user.isPhoneVerified,
       };
     }
 
-    return this.applyDecay(
+    const decayedBase = this.applyDecay(
       {
         alpha: user.alpha,
         beta: user.beta,
         tradeCount: user.tradeCount,
-        penalties: user.penalties,
+        penaltyWeight,
         isEmailVerified: user.isEmailVerified,
         isPhoneVerified: user.isPhoneVerified,
       },
       daysElapsed,
     );
+
+    return { ...decayedBase, penaltyWeight };
   }
 
-  /**
-   * Calculates the final sigmoid score.
-   */
   public calculateScore(params: ReputationState): number {
     const config = this.configService.get<ReputationConfig>('reputation');
     if (!config)
@@ -151,81 +139,76 @@ export class ReputationService {
 
     const { weights, sigmoid } = config;
 
-    // 1. History: Bayesian average (Success Rate)
     const historyScore = params.alpha / (params.alpha + params.beta);
-
-    // 2. Verification: Identity trust
     let verificationScore = 0;
     if (params.isEmailVerified) verificationScore += 0.5;
     if (params.isPhoneVerified) verificationScore += 0.5;
 
-    // 3. Engagement: Transaction volume (Logarithmic scaling)
     const engagementScore = Math.log10(1 + params.tradeCount) / 2;
 
-    // 4. Raw Sum (Weighted) - Penalties (Linear)
     const rawSum =
       historyScore * weights.history +
       verificationScore * weights.verification +
       Math.min(1, engagementScore) * weights.engagement -
-      params.penalties;
+      params.penaltyWeight;
 
-    // 5. Sigmoid Smoothing
     const finalScore = 100 / (1 + Math.exp(-sigmoid.k * (rawSum - sigmoid.x0)));
     return Number.parseFloat(finalScore.toFixed(2));
   }
 
-  /**
-   * Main entry point for reputation updates.
-   * Handles scaling penalties based on dispute severity (NONE, LOW, MEDIUM, HIGH).
-   */
   async updateReputation(
     userId: string,
     type: ReputationChangeType,
     reason?: string,
     severity?: DisputeSeverity,
+    tradeId?: string,
   ) {
-    const user = await this.userRepo.findOneBy({ id: userId });
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      relations: ['penaltyHistory'],
+    });
     if (!user) return;
 
-    const decayedState = this.applyLazyDecay(user);
-    Object.assign(user, decayedState);
+    if (
+      type === ReputationChangeType.PENALTY &&
+      severity &&
+      severity !== DisputeSeverity.NONE
+    ) {
+      const penalty = this.penaltyRepo.create({
+        user,
+        severity,
+        reason,
+        relatedTradeId: tradeId,
+        isActive: true,
+      });
+      await this.penaltyRepo.save(penalty);
+      user.penaltyHistory = [...(user.penaltyHistory || []), penalty];
+    }
 
-    const config = this.configService.get<ReputationConfig>('reputation');
-    const basePenalty = config?.penalties?.defaultImpact ?? 0.1;
+    const decayedState = this.applyLazyDecay(user);
+    Object.assign(user, {
+      alpha: decayedState.alpha,
+      beta: decayedState.beta,
+      tradeCount: decayedState.tradeCount,
+    });
 
     if (type === ReputationChangeType.SUCCESS) {
       user.alpha += 1;
       user.tradeCount += 1;
     } else if (type === ReputationChangeType.FAILURE) {
       user.beta += 1;
-    } else if (type === ReputationChangeType.PENALTY) {
-      let multiplier = 1;
-
-      // Admin-controlled scaling
-      if (severity === DisputeSeverity.NONE) {
-        multiplier = 0; // No impact on the actual penalty score
-      } else if (severity === DisputeSeverity.LOW) {
-        multiplier = 0.5;
-      } else if (severity === DisputeSeverity.HIGH) {
-        multiplier = 2.5;
-      }
-
-      user.penalties += basePenalty * multiplier;
     }
 
     user.reputationScore = this.calculateScore({
+      ...decayedState,
       alpha: user.alpha,
       beta: user.beta,
       tradeCount: user.tradeCount,
-      penalties: user.penalties,
-      isEmailVerified: user.isEmailVerified,
-      isPhoneVerified: user.isPhoneVerified,
     });
 
     user.lastReputationUpdate = new Date();
     await this.userRepo.save(user);
 
-    // Log the event
     await this.logRepo.save({
       userId,
       changeType: type,

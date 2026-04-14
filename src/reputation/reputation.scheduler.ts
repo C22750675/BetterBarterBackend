@@ -17,34 +17,30 @@ export class ReputationScheduler {
 
   /**
    * Daily Maintenance Task.
-   * Only target users who haven't updated in over 24 hours.
+   * Updates inactive users so their reputation decay is reflected in the DB.
    */
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async handleDailyDecay() {
-    this.logger.log(
-      'Starting maintenance reputation decay for inactive users...',
-    );
+    this.logger.log('Starting maintenance reputation decay...');
 
-    // Only fetch users who haven't been updated in the last 24 hours
     const oneDayAgo = new Date();
     oneDayAgo.setDate(oneDayAgo.getDate() - 1);
 
+    // Fetch users with their penalty history to ensure accurate score recalculation
     const users = await this.userRepo.find({
       where: {
         lastReputationUpdate: LessThan(oneDayAgo),
       },
+      relations: ['penaltyHistory'],
     });
 
     let updatedCount = 0;
 
     for (const user of users) {
-      // Apply lazy decay to catch up
       const decayedState = this.reputationService.applyLazyDecay(user);
 
-      // Update entity
       user.alpha = decayedState.alpha;
       user.beta = decayedState.beta;
-      user.penalties = decayedState.penalties;
       user.tradeCount = decayedState.tradeCount;
       user.reputationScore =
         this.reputationService.calculateScore(decayedState);

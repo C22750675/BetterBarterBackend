@@ -20,8 +20,16 @@ const reputation = () => ({
       beta: 1, // Neutral failure starting point
     },
     penalties: {
-      defaultImpact: 0.1, // Impact subtracted from raw sum during a dispute
+      severities: {
+        none: 0,
+        low: 0.05,
+        medium: 0.1,
+        high: 0.25,
+      },
     },
   },
 });
+
+export type ReputationConfig = ReturnType<typeof reputation>['reputation'];
+
 export default reputation;
