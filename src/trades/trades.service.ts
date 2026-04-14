@@ -158,11 +158,27 @@ export class TradesService {
     await queryRunner.startTransaction();
 
     try {
+      // 1. Free the proposer's locked stock
       if (trade.offeredItem) {
         trade.offeredItem.stock += trade.offeredItemQuantity;
         await queryRunner.manager.save(trade.offeredItem);
       }
 
+      // 2. Fetch all applications and refund the applicants' stock before deleting
+      const apps = await queryRunner.manager.find(TradeApplication, {
+        where: { tradeId },
+        relations: ['offeredItem'],
+      });
+
+      for (const app of apps) {
+        if (app.offeredItem) {
+          app.offeredItem.stock += app.offeredItemQuantity;
+          await queryRunner.manager.save(app.offeredItem);
+        }
+        await queryRunner.manager.remove(app);
+      }
+
+      // 3. Remove the trade safely now that all applicant stock has been restored
       await queryRunner.manager.remove(trade);
       await queryRunner.commitTransaction();
       return { message: 'Trade listing deleted successfully' };
