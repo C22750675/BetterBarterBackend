@@ -377,54 +377,45 @@ export class TradesService {
     await queryRunner.startTransaction();
 
     try {
+      // Step 1: Refund old stock if modifying an existing application
       if (existingApplication) {
         if (existingApplication.offeredItemId === dto.offeredItemId) {
-          const diff =
-            dto.offeredItemQuantity - existingApplication.offeredItemQuantity;
-          if (diff > 0 && offeredItem.stock < diff)
-            throw new BadRequestException(
-              'Quantity exceeds your available stock',
-            );
-          offeredItem.stock -= diff;
-          await queryRunner.manager.save(offeredItem);
-        } else {
-          if (existingApplication.offeredItem) {
-            existingApplication.offeredItem.stock +=
-              existingApplication.offeredItemQuantity;
-            await queryRunner.manager.save(existingApplication.offeredItem);
-          }
-          if (dto.offeredItemQuantity > offeredItem.stock)
-            throw new BadRequestException(
-              'Quantity exceeds your available stock',
-            );
-          offeredItem.stock -= dto.offeredItemQuantity;
-          await queryRunner.manager.save(offeredItem);
+          // Same item: Refund temporarily in-memory, will be corrected in Step 2
+          offeredItem.stock += existingApplication.offeredItemQuantity;
+        } else if (existingApplication.offeredItem) {
+          // Different item: Refund and save immediately
+          existingApplication.offeredItem.stock +=
+            existingApplication.offeredItemQuantity;
+          await queryRunner.manager.save(existingApplication.offeredItem);
         }
-
-        existingApplication.offeredItem = offeredItem;
-        existingApplication.offeredItemQuantity = dto.offeredItemQuantity;
-        existingApplication.message = dto.message;
-
-        const savedApp = await queryRunner.manager.save(existingApplication);
-        await queryRunner.commitTransaction();
-        return savedApp;
       }
 
-      if (dto.offeredItemQuantity > offeredItem.stock)
+      // Step 2: Validate and deduct new requested stock
+      if (dto.offeredItemQuantity > offeredItem.stock) {
         throw new BadRequestException('Quantity exceeds your available stock');
+      }
       offeredItem.stock -= dto.offeredItemQuantity;
       await queryRunner.manager.save(offeredItem);
 
-      const application = this.applicationRepo.create({
-        trade,
-        applicant: user,
-        offeredItem,
-        offeredItemQuantity: dto.offeredItemQuantity,
-        message: dto.message,
-        status: TradeApplicationStatus.PENDING,
-      });
+      // Step 3: Update existing application or create a new one
+      let applicationToSave: TradeApplication;
+      if (existingApplication) {
+        existingApplication.offeredItem = offeredItem;
+        existingApplication.offeredItemQuantity = dto.offeredItemQuantity;
+        existingApplication.message = dto.message;
+        applicationToSave = existingApplication;
+      } else {
+        applicationToSave = this.applicationRepo.create({
+          trade,
+          applicant: user,
+          offeredItem,
+          offeredItemQuantity: dto.offeredItemQuantity,
+          message: dto.message,
+          status: TradeApplicationStatus.PENDING,
+        });
+      }
 
-      const savedApp = await queryRunner.manager.save(application);
+      const savedApp = await queryRunner.manager.save(applicationToSave);
       await queryRunner.commitTransaction();
       return savedApp;
     } catch (err) {
