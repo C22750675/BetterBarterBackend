@@ -19,25 +19,26 @@ import {
 } from './entities/trade-application.entity.js';
 import { ReputationService } from '../reputation/reputation.service.js';
 import { ReputationChangeType } from '../reputation/entities/reputation-log.entity.js';
+import { UpdateTradeDto } from './dto/update-trade.dto.js';
 
 @Injectable()
 export class TradesService {
   constructor(
     @InjectRepository(Trade)
-    private readonly tradeRepository: Repository<Trade>,
+    private readonly tradeRepo: Repository<Trade>,
     @InjectRepository(Item)
-    private readonly itemRepository: Repository<Item>,
+    private readonly itemRepo: Repository<Item>,
     @InjectRepository(Rating)
-    private readonly ratingRepository: Repository<Rating>,
+    private readonly ratingRepo: Repository<Rating>,
     @InjectRepository(TradeApplication)
-    private readonly applicationRepository: Repository<TradeApplication>,
+    private readonly applicationRepo: Repository<TradeApplication>,
     private readonly reputationService: ReputationService,
   ) {}
 
   async create(createTradeDto: CreateTradeDto, user: User) {
     const { itemId, circleId, quantity, description } = createTradeDto;
 
-    const item = await this.itemRepository.findOneBy({ id: itemId });
+    const item = await this.itemRepo.findOneBy({ id: itemId });
     if (!item) throw new NotFoundException(`Item not found`);
 
     if (item.ownerId !== user.id)
@@ -45,7 +46,7 @@ export class TradesService {
     if (quantity > item.stock)
       throw new ForbiddenException(`Quantity exceeds stock`);
 
-    const trade = this.tradeRepository.create({
+    const trade = this.tradeRepo.create({
       proposer: user,
       circleId,
       offeredItem: item,
@@ -54,12 +55,50 @@ export class TradesService {
       status: TradeStatus.PENDING,
     });
 
-    return this.tradeRepository.save(trade);
+    return this.tradeRepo.save(trade);
+  }
+
+  /**
+   * Updates an existing trade proposal.
+   * Logic:
+   * 1. Ensure trade exists.
+   * 2. Ensure the user is the original proposer.
+   * 3. Ensure the trade is still PENDING (not accepted/rejected/disputed).
+   */
+  async update(tradeId: string, dto: UpdateTradeDto, userId: string) {
+    const trade = await this.tradeRepo.findOne({
+      where: { id: tradeId },
+    });
+
+    if (!trade) {
+      throw new NotFoundException(`Trade with ID ${tradeId} not found`);
+    }
+
+    // Security: Only the proposer can edit their own proposal
+    if (trade.proposerId !== userId) {
+      throw new ForbiddenException('You can only update trades you proposed');
+    }
+
+    // Business Logic: Trades cannot be edited once the recipient has interacted with them
+    if (trade.status !== TradeStatus.PENDING) {
+      throw new BadRequestException(
+        `Cannot update a trade that is already ${trade.status}`,
+      );
+    }
+
+    // Apply updates
+    trade.id = tradeId;
+    trade.offeredItemQuantity = dto.quantity;
+    if (dto.description !== undefined) {
+      trade.description = dto.description;
+    }
+
+    return this.tradeRepo.save(trade);
   }
 
   // Accepts userId to check for existing applications
   async findByCircleId(circleId: string, userId: string): Promise<Trade[]> {
-    const trades = await this.tradeRepository.find({
+    const trades = await this.tradeRepo.find({
       where: { circleId, status: TradeStatus.PENDING },
       relations: ['proposer', 'offeredItem'],
       order: { creationDate: 'DESC' },
@@ -69,7 +108,7 @@ export class TradesService {
     const tradeIds = trades.map((t) => t.id);
     if (tradeIds.length === 0) return [];
 
-    const myApplications = await this.applicationRepository
+    const myApplications = await this.applicationRepo
       .createQueryBuilder('app')
       .where('app.applicantId = :userId', { userId })
       .andWhere('app.tradeId IN (:...tradeIds)', { tradeIds })
@@ -88,7 +127,7 @@ export class TradesService {
   }
 
   async findMyTrades(userId: string): Promise<Trade[]> {
-    return this.tradeRepository.find({
+    return this.tradeRepo.find({
       where: [{ proposerId: userId }, { recipientId: userId }],
       relations: ['proposer', 'recipient', 'offeredItem'],
       order: { creationDate: 'DESC' },
@@ -97,14 +136,14 @@ export class TradesService {
 
   // Find One Trade with optional application check
   async findOne(tradeId: string, userId?: string): Promise<Trade> {
-    const trade = await this.tradeRepository.findOne({
+    const trade = await this.tradeRepo.findOne({
       where: { id: tradeId },
       relations: ['proposer', 'recipient', 'offeredItem'],
     });
     if (!trade) throw new NotFoundException('Trade not found');
 
     if (userId) {
-      const myApplication = await this.applicationRepository.findOne({
+      const myApplication = await this.applicationRepo.findOne({
         where: { tradeId, applicantId: userId },
       });
       if (myApplication) {
@@ -115,7 +154,7 @@ export class TradesService {
   }
 
   async updateStatus(tradeId: string, status: TradeStatus) {
-    const trade = await this.tradeRepository.findOne({
+    const trade = await this.tradeRepo.findOne({
       where: { id: tradeId },
       relations: ['proposer', 'offeredItem'],
     });
@@ -127,11 +166,11 @@ export class TradesService {
       trade.completionDate = new Date();
     }
 
-    return this.tradeRepository.save(trade);
+    return this.tradeRepo.save(trade);
   }
 
   async rateTrade(tradeId: string, dto: CreateRatingDto, rater: User) {
-    const trade = await this.tradeRepository.findOne({
+    const trade = await this.tradeRepo.findOne({
       where: { id: tradeId },
       relations: ['proposer', 'recipient'],
     });
@@ -151,7 +190,7 @@ export class TradesService {
       throw new ForbiddenException('You were not part of this trade');
     }
 
-    const rating = this.ratingRepository.create({
+    const rating = this.ratingRepo.create({
       score: dto.score,
       comment: dto.comment,
       rater: rater,
@@ -159,8 +198,8 @@ export class TradesService {
       trade: trade,
     });
 
-    const savedRating = await this.ratingRepository.save(rating);
-    await this.tradeRepository.save(trade);
+    const savedRating = await this.ratingRepo.save(rating);
+    await this.tradeRepo.save(trade);
 
     // Map 1-5 star rating to binary Success/Failure for Bayesian parameters
     const changeType =
@@ -183,14 +222,14 @@ export class TradesService {
     dto: CreateTradeApplicationDto,
     user: User,
   ) {
-    const trade = await this.tradeRepository.findOneBy({ id: tradeId });
+    const trade = await this.tradeRepo.findOneBy({ id: tradeId });
     if (!trade) throw new NotFoundException('Trade listing not found');
 
     if (trade.proposerId === user.id) {
       throw new BadRequestException('You cannot apply to your own trade');
     }
 
-    const offeredItem = await this.itemRepository.findOneBy({
+    const offeredItem = await this.itemRepo.findOneBy({
       id: dto.offeredItemId,
     });
     if (!offeredItem) throw new NotFoundException('Offered item not found');
@@ -204,7 +243,7 @@ export class TradesService {
     }
 
     // Check if application already exists to update it instead of creating duplicate
-    const existingApplication = await this.applicationRepository.findOne({
+    const existingApplication = await this.applicationRepo.findOne({
       where: { tradeId, applicantId: user.id },
     });
 
@@ -214,11 +253,11 @@ export class TradesService {
       existingApplication.offeredItemQuantity = dto.offeredItemQuantity;
       existingApplication.message = dto.message;
 
-      return this.applicationRepository.save(existingApplication);
+      return this.applicationRepo.save(existingApplication);
     }
 
     // Create new application
-    const application = this.applicationRepository.create({
+    const application = this.applicationRepo.create({
       trade,
       applicant: user,
       offeredItem,
@@ -227,12 +266,12 @@ export class TradesService {
       status: TradeApplicationStatus.PENDING,
     });
 
-    return this.applicationRepository.save(application);
+    return this.applicationRepo.save(application);
   }
 
   // Get Applications for a Trade (For the Proposer to see)
   async getApplicationsForTrade(tradeId: string, user: User) {
-    const trade = await this.tradeRepository.findOneBy({ id: tradeId });
+    const trade = await this.tradeRepo.findOneBy({ id: tradeId });
     if (!trade) throw new NotFoundException('Trade not found');
 
     // Only the proposer should see the applications (or admins)
@@ -242,7 +281,7 @@ export class TradesService {
       );
     }
 
-    return this.applicationRepository.find({
+    return this.applicationRepo.find({
       where: { tradeId },
       relations: ['applicant', 'offeredItem'],
       order: { createdAt: 'DESC' },
@@ -251,7 +290,7 @@ export class TradesService {
 
   // Accept Application
   async acceptApplication(applicationId: string, user: User) {
-    const application = await this.applicationRepository.findOne({
+    const application = await this.applicationRepo.findOne({
       where: { id: applicationId },
       relations: ['trade', 'applicant'], // Load relations
     });
@@ -267,20 +306,20 @@ export class TradesService {
 
     // 2. Update Application Status
     application.status = TradeApplicationStatus.ACCEPTED;
-    await this.applicationRepository.save(application);
+    await this.applicationRepo.save(application);
 
     // 3. Update Trade Status and Set Recipient
     const trade = application.trade;
     trade.status = TradeStatus.ACCEPTED;
     trade.recipient = application.applicant; // Set the successful applicant as recipient
-    await this.tradeRepository.save(trade);
+    await this.tradeRepo.save(trade);
 
     return { message: 'Application accepted, chat opened.' };
   }
 
   // Decline Application (Delete it)
   async declineApplication(applicationId: string, user: User) {
-    const application = await this.applicationRepository.findOne({
+    const application = await this.applicationRepo.findOne({
       where: { id: applicationId },
       relations: ['trade'],
     });
@@ -294,7 +333,7 @@ export class TradesService {
     }
 
     // Delete the application
-    await this.applicationRepository.remove(application);
+    await this.applicationRepo.remove(application);
 
     return { message: 'Application declined and removed.' };
   }

@@ -19,6 +19,7 @@ import { TradesService } from './trades.service.js';
 import { CreateRatingDto } from './dto/create-rating.dto.js';
 import { UpdateTradeStatusDto } from './dto/update-trade-status.dto.js';
 import { CreateTradeApplicationDto } from './dto/create-trade-application.dto.js';
+import { UpdateTradeDto } from './dto/update-trade.dto.js';
 
 @Controller('trades')
 @UseGuards(JwtAuthGuard)
@@ -29,6 +30,18 @@ export class TradesController {
   @Post()
   async create(@Body() createTradeDto: CreateTradeDto, @GetUser() user: User) {
     return this.tradesService.create(createTradeDto, user);
+  }
+
+  /**
+   * Facilitates the frontend updateTrade request.
+   */
+  @Patch(':id')
+  async update(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() updateTradeDto: UpdateTradeDto,
+    @GetUser() user: User,
+  ) {
+    return this.tradesService.update(id, updateTradeDto, user.id);
   }
 
   @Get('circle/:circleId')
@@ -46,48 +59,48 @@ export class TradesController {
   }
 
   // Get Single Trade by ID
-  @Get(':id')
+  @Get(':tradeId')
   async findOne(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('tradeId', ParseUUIDPipe) tradeId: string,
     @GetUser() user: User, // Inject user
   ) {
-    return this.tradesService.findOne(id, user.id);
+    return this.tradesService.findOne(tradeId, user.id);
   }
 
   // Accept, Reject, or Complete a trade
-  @Patch(':id/status')
+  @Patch(':tradeId/status')
   async updateStatus(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('tradeId', ParseUUIDPipe) tradeId: string,
     @Body() updateStatusDto: UpdateTradeStatusDto,
   ) {
-    return this.tradesService.updateStatus(id, updateStatusDto.status);
+    return this.tradesService.updateStatus(tradeId, updateStatusDto.status);
   }
 
   // Leave a review for a completed trade
-  @Post(':id/rate')
+  @Post(':tradeId/rate')
   async rateTrade(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('tradeId', ParseUUIDPipe) tradeId: string,
     @Body() createRatingDto: CreateRatingDto,
     @GetUser() user: User,
   ) {
-    return this.tradesService.rateTrade(id, createRatingDto, user);
+    return this.tradesService.rateTrade(tradeId, createRatingDto, user);
   }
 
-  @Post(':id/apply')
+  @Post(':tradeId/apply')
   async applyForTrade(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('tradeId', ParseUUIDPipe) tradeId: string,
     @Body() dto: CreateTradeApplicationDto,
     @GetUser() user: User,
   ) {
-    return this.tradesService.applyForTrade(id, dto, user);
+    return this.tradesService.applyForTrade(tradeId, dto, user);
   }
 
-  @Get(':id/applications')
+  @Get(':tradeId/applications')
   async getApplications(
-    @Param('id', ParseUUIDPipe) id: string,
+    @Param('tradeId', ParseUUIDPipe) tradeId: string,
     @GetUser() user: User,
   ) {
-    return this.tradesService.getApplicationsForTrade(id, user);
+    return this.tradesService.getApplicationsForTrade(tradeId, user);
   }
 
   @Post('applications/:id/accept')
