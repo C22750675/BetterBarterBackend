@@ -55,8 +55,21 @@ export class CirclesService {
 
       newCircle.memberships = [membership];
       return newCircle;
-    } catch (err) {
+    } catch (err: unknown) {
       await queryRunner.rollbackTransaction();
+
+      // Check for Postgres Unique Violation
+      if (
+        err !== null &&
+        typeof err === 'object' &&
+        'code' in err &&
+        (err as Record<string, unknown>).code === '23505'
+      ) {
+        throw new ConflictException(
+          'A circle with this name already exists. Please choose another.',
+        );
+      }
+
       let safeMessage: string;
       if (err instanceof Error) {
         safeMessage = err.message;
