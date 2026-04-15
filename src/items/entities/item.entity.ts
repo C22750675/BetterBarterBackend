@@ -25,7 +25,7 @@ export class Item {
   @Column({ type: 'text' })
   description!: string;
 
-  @Column({ type: 'varchar', nullable: true })
+  @Column({ type: 'varchar' })
   imageUrl!: string;
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })

@@ -28,9 +28,9 @@ export class CreateItemDto {
   @Min(0.01)
   estimatedValue!: number;
 
-  @IsOptional()
   @IsString()
-  imageUrl?: string;
+  @IsNotEmpty()
+  imageUrl!: string;
 
   @IsOptional()
   @IsInt()
