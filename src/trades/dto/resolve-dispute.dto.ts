@@ -1,10 +1,4 @@
-import {
-  IsEnum,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  IsUUID,
-} from 'class-validator';
+import { IsEnum, IsNotEmpty, IsString, IsUUID } from 'class-validator';
 import { DisputeSeverity } from '../entities/dispute.entity.js';
 
 export class ResolveDisputeDto {
@@ -13,15 +7,10 @@ export class ResolveDisputeDto {
   severity!: DisputeSeverity;
 
   @IsString()
-  @IsOptional()
-  resolutionNote?: string;
+  @IsNotEmpty()
+  resolutionNote!: string;
 
-  /**
-   * Optional culpritId. If provided, the admin explicitly chooses who gets the penalty.
-   * This allows the admin to penalize the reporter if they were found to be at fault
-   * or acting in bad faith.
-   */
-  @IsOptional()
   @IsUUID()
-  culpritId?: string;
+  @IsNotEmpty()
+  culpritId!: string;
 }

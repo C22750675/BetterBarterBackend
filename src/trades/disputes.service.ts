@@ -68,7 +68,7 @@ export class DisputesService {
       .innerJoinAndSelect('trade.proposer', 'proposer')
       .innerJoinAndSelect('trade.recipient', 'recipient')
       .leftJoinAndSelect('trade.offeredItem', 'offeredItem')
-      .leftJoinAndSelect('trade.messages', 'messages') // Load chat logs for evidence
+      .leftJoinAndSelect('trade.messages', 'messages')
       .innerJoin('trade.circle', 'circle')
       .innerJoin('circle.memberships', 'membership')
       .where('dispute.id = :disputeId', { disputeId })
@@ -152,7 +152,6 @@ export class DisputesService {
 
   /**
    * Resolve a dispute (Circle Admin only).
-   * Allows the admin to explicitly select the culprit or defaults to the non-reporting party.
    */
   async resolve(disputeId: string, dto: ResolveDisputeDto, adminId: string) {
     const dispute = await this.disputeRepo.findOne({
@@ -179,22 +178,10 @@ export class DisputesService {
       );
     }
 
-    // Determine Culprit:
-    // 1. Use dto.culpritId if provided by the admin.
-    // 2. Default to the "other party" (non-reporter) if not provided.
-    let targetCulpritId = dto.culpritId;
-
-    if (!targetCulpritId) {
-      targetCulpritId =
-        dispute.reporterId === dispute.trade.proposerId
-          ? dispute.trade.recipientId
-          : dispute.trade.proposerId;
-    }
-
-    // Validation: Ensure the culprit is actually a participant in the trade
+    // Ensure the mandatory culprit is actually a participant in the trade
     if (
-      targetCulpritId !== dispute.trade.proposerId &&
-      targetCulpritId !== dispute.trade.recipientId
+      dto.culpritId !== dispute.trade.proposerId &&
+      dto.culpritId !== dispute.trade.recipientId
     ) {
       throw new BadRequestException(
         'The selected culprit is not a participant in this trade',
@@ -204,7 +191,7 @@ export class DisputesService {
     // 1. Update Dispute record
     dispute.status = DisputeStatus.RESOLVED;
     dispute.severity = dto.severity;
-    dispute.culpritId = targetCulpritId;
+    dispute.culpritId = dto.culpritId;
     dispute.resolvedAt = new Date();
     await this.disputeRepo.save(dispute);
 
@@ -215,11 +202,10 @@ export class DisputesService {
     await this.tradeRepo.save(trade);
 
     // 3. Trigger Reputation Penalty
-    // Even if severity is NONE, we call this to log the resolution event.
     await this.reputationService.updateReputation(
-      targetCulpritId,
+      dto.culpritId,
       ReputationChangeType.PENALTY,
-      dto.resolutionNote || 'Dispute resolved by admin',
+      dto.resolutionNote,
       dto.severity,
     );
 
