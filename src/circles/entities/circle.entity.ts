@@ -23,7 +23,7 @@ export class Circle {
   @Column({ type: 'text', nullable: true })
   description!: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar' })
   imageUrl!: string;
 
   @Column({

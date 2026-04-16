@@ -44,7 +44,7 @@ export class CreateCircleDto {
   })
   color?: string;
 
-  @IsOptional()
   @IsString()
-  imageUrl?: string;
+  @IsNotEmpty()
+  imageUrl!: string;
 }
