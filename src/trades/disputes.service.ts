@@ -30,12 +30,14 @@ export class DisputesService {
   /**
    * Fetches a list of disputes for the circles where the user is an admin.
    */
-  async findAdminDisputes(adminId: string, filterDto: GetDisputesFilterDto) {
+  async findDisputes(adminId: string, filterDto: GetDisputesFilterDto) {
     const { status, circleId } = filterDto;
 
     const query = this.disputeRepo
       .createQueryBuilder('dispute')
       .innerJoinAndSelect('dispute.trade', 'trade')
+      .innerJoinAndSelect('trade.proposer', 'proposer')
+      .innerJoinAndSelect('trade.recipient', 'recipient')
       .innerJoin('trade.circle', 'circle')
       .innerJoin('circle.memberships', 'membership')
       // Only fetch if the user is an admin of the circle the trade belongs to
