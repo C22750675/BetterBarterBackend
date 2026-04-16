@@ -97,13 +97,24 @@ export class TradesController {
     return this.tradesService.rateTrade(tradeId, createRatingDto, user);
   }
 
+  // Create a new application
   @Post(':tradeId/apply')
-  async applyForTrade(
+  async createApplication(
     @Param('tradeId', ParseUUIDPipe) tradeId: string,
     @Body() dto: CreateTradeApplicationDto,
     @GetUser() user: User,
   ) {
-    return this.tradesService.applyForTrade(tradeId, dto, user);
+    return this.tradesService.createApplication(tradeId, dto, user);
+  }
+
+  // Edit an existing application
+  @Patch('applications/:id')
+  async updateApplication(
+    @Param('id', ParseUUIDPipe) applicationId: string,
+    @Body() dto: CreateTradeApplicationDto,
+    @GetUser() user: User,
+  ) {
+    return this.tradesService.updateApplication(applicationId, dto, user);
   }
 
   @Get(':tradeId/applications')

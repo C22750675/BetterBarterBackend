@@ -3,6 +3,7 @@ import {
   ForbiddenException,
   Injectable,
   NotFoundException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, Repository } from 'typeorm';
@@ -345,8 +346,8 @@ export class TradesService {
     return savedRating;
   }
 
-  // Apply for a Trade
-  async applyForTrade(
+  // 1. Create Application
+  async createApplication(
     tradeId: string,
     dto: CreateTradeApplicationDto,
     user: User,
@@ -356,6 +357,20 @@ export class TradesService {
 
     if (trade.proposerId === user.id) {
       throw new BadRequestException('You cannot apply to your own trade');
+    }
+    if (trade.status !== TradeStatus.PENDING) {
+      throw new BadRequestException(
+        'This trade is no longer accepting applications',
+      );
+    }
+
+    const existingApplication = await this.applicationRepo.findOne({
+      where: { tradeId, applicantId: user.id },
+    });
+    if (existingApplication) {
+      throw new ConflictException(
+        'You have already applied to this trade. Please edit your existing application.',
+      );
     }
 
     const offeredItem = await this.itemRepo.findOneBy({
@@ -367,53 +382,25 @@ export class TradesService {
       throw new ForbiddenException('You do not own the item you are offering');
     }
 
-    const existingApplication = await this.applicationRepo.findOne({
-      where: { tradeId, applicantId: user.id },
-      relations: ['offeredItem'],
-    });
-
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
 
     try {
-      // Step 1: Refund old stock if modifying an existing application
-      if (existingApplication) {
-        if (existingApplication.offeredItemId === dto.offeredItemId) {
-          // Same item: Refund temporarily in-memory, will be corrected in Step 2
-          offeredItem.stock += existingApplication.offeredItemQuantity;
-        } else if (existingApplication.offeredItem) {
-          // Different item: Refund and save immediately
-          existingApplication.offeredItem.stock +=
-            existingApplication.offeredItemQuantity;
-          await queryRunner.manager.save(existingApplication.offeredItem);
-        }
-      }
-
-      // Step 2: Validate and deduct new requested stock
       if (dto.offeredItemQuantity > offeredItem.stock) {
         throw new BadRequestException('Quantity exceeds your available stock');
       }
       offeredItem.stock -= dto.offeredItemQuantity;
       await queryRunner.manager.save(offeredItem);
 
-      // Step 3: Update existing application or create a new one
-      let applicationToSave: TradeApplication;
-      if (existingApplication) {
-        existingApplication.offeredItem = offeredItem;
-        existingApplication.offeredItemQuantity = dto.offeredItemQuantity;
-        existingApplication.message = dto.message;
-        applicationToSave = existingApplication;
-      } else {
-        applicationToSave = this.applicationRepo.create({
-          trade,
-          applicant: user,
-          offeredItem,
-          offeredItemQuantity: dto.offeredItemQuantity,
-          message: dto.message,
-          status: TradeApplicationStatus.PENDING,
-        });
-      }
+      const applicationToSave = this.applicationRepo.create({
+        trade,
+        applicant: user,
+        offeredItem,
+        offeredItemQuantity: dto.offeredItemQuantity,
+        message: dto.message,
+        status: TradeApplicationStatus.PENDING,
+      });
 
       const savedApp = await queryRunner.manager.save(applicationToSave);
       await queryRunner.commitTransaction();
@@ -426,7 +413,75 @@ export class TradesService {
     }
   }
 
-  // Get Applications for a Trade (For the Proposer to see)
+  // 2. Update Application
+  async updateApplication(
+    applicationId: string,
+    dto: CreateTradeApplicationDto,
+    user: User,
+  ) {
+    const application = await this.applicationRepo.findOne({
+      where: { id: applicationId },
+      relations: ['trade', 'offeredItem', 'applicant'],
+    });
+
+    if (!application) throw new NotFoundException('Application not found');
+
+    if (application.applicant.id !== user.id) {
+      throw new ForbiddenException('You can only edit your own applications');
+    }
+    if (application.trade.status !== TradeStatus.PENDING) {
+      throw new BadRequestException(
+        'This trade is no longer accepting applications',
+      );
+    }
+
+    const newOfferedItem = await this.itemRepo.findOneBy({
+      id: dto.offeredItemId,
+    });
+    if (!newOfferedItem) throw new NotFoundException('Offered item not found');
+
+    if (newOfferedItem.ownerId !== user.id) {
+      throw new ForbiddenException('You do not own the item you are offering');
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Step 1: Refund old stock
+      if (application.offeredItemId === dto.offeredItemId) {
+        // Same item: Refund temporarily in-memory, will be corrected in Step 2
+        newOfferedItem.stock += application.offeredItemQuantity;
+      } else if (application.offeredItem) {
+        // Different item: Refund and save immediately
+        application.offeredItem.stock += application.offeredItemQuantity;
+        await queryRunner.manager.save(application.offeredItem);
+      }
+
+      // Step 2: Validate and deduct new requested stock
+      if (dto.offeredItemQuantity > newOfferedItem.stock) {
+        throw new BadRequestException('Quantity exceeds your available stock');
+      }
+      newOfferedItem.stock -= dto.offeredItemQuantity;
+      await queryRunner.manager.save(newOfferedItem);
+
+      // Step 3: Update application
+      application.offeredItem = newOfferedItem;
+      application.offeredItemQuantity = dto.offeredItemQuantity;
+      application.message = dto.message;
+
+      const savedApp = await queryRunner.manager.save(application);
+      await queryRunner.commitTransaction();
+      return savedApp;
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      throw err;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
   async getApplicationsForTrade(tradeId: string, user: User) {
     const trade = await this.tradeRepo.findOneBy({ id: tradeId });
     if (!trade) throw new NotFoundException('Trade not found');
