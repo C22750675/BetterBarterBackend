@@ -24,7 +24,7 @@ export class DisputesController {
   constructor(private readonly disputesService: DisputesService) {}
 
   @Get()
-  async getAdminDisputes(
+  async getDisputes(
     @Query() filterDto: GetDisputesFilterDto,
     @GetUser() user: User,
   ) {
