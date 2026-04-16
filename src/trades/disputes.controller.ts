@@ -28,7 +28,7 @@ export class DisputesController {
     @Query() filterDto: GetDisputesFilterDto,
     @GetUser() user: User,
   ) {
-    return this.disputesService.findAdminDisputes(user.id, filterDto);
+    return this.disputesService.findDisputes(user.id, filterDto);
   }
 
   @Get(':id')
