@@ -33,7 +33,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException();
     }
 
-    // Renaming to _passwordHash satisfies the @typescript-eslint/no-unused-vars rule
     const { passwordHash: _passwordHash, ...result } = user;
     return result;
   }

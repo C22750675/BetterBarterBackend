@@ -4,7 +4,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { User } from '../users/entities/user.entity.js';
 import { Penalty } from '../users/entities/penalty.entity.js';
@@ -35,6 +35,7 @@ export class ReputationService {
     @InjectRepository(ReputationLog)
     private readonly logRepo: Repository<ReputationLog>,
     private readonly configService: ConfigService,
+    private readonly dataSource: DataSource,
   ) {}
 
   /**
@@ -163,61 +164,91 @@ export class ReputationService {
     severity?: DisputeSeverity,
     tradeId?: string,
   ) {
-    const user = await this.userRepo.findOne({
-      where: { id: userId },
-      relations: ['penaltyHistory'],
-    });
-    if (!user) return;
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    if (
-      type === ReputationChangeType.PENALTY &&
-      severity &&
-      severity !== DisputeSeverity.NONE
-    ) {
-      const penalty = this.penaltyRepo.create({
-        user,
-        severity,
-        reason,
-        relatedTradeId: tradeId,
-        isActive: true,
+    try {
+      // 1. Fetch user using the query runner manager
+      // We use a pessimistic_write lock here to prevent race conditions if a user
+      // receives two ratings at the exact same millisecond.
+      const user = await queryRunner.manager.findOne(User, {
+        where: { id: userId },
+        relations: ['penaltyHistory'],
+        lock: { mode: 'pessimistic_write' },
       });
-      await this.penaltyRepo.save(penalty);
-      user.penaltyHistory = [...(user.penaltyHistory || []), penalty];
+
+      if (!user) {
+        await queryRunner.rollbackTransaction();
+        return;
+      }
+
+      // 2. Handle Penalty Creation
+      if (
+        type === ReputationChangeType.PENALTY &&
+        severity &&
+        severity !== DisputeSeverity.NONE
+      ) {
+        const penalty = this.penaltyRepo.create({
+          user,
+          severity,
+          reason,
+          relatedTradeId: tradeId,
+          isActive: true,
+        });
+        await queryRunner.manager.save(penalty);
+        user.penaltyHistory = [...(user.penaltyHistory || []), penalty];
+      }
+
+      // 3. Calculate new decayed state and update alpha/beta
+      const decayedState = this.applyLazyDecay(user);
+      Object.assign(user, {
+        alpha: decayedState.alpha,
+        beta: decayedState.beta,
+        tradeCount: decayedState.tradeCount,
+      });
+
+      if (type === ReputationChangeType.SUCCESS) {
+        user.alpha += 1;
+        user.tradeCount += 1;
+      } else if (type === ReputationChangeType.FAILURE) {
+        user.beta += 1;
+      }
+
+      user.reputationScore = this.calculateScore({
+        ...decayedState,
+        alpha: user.alpha,
+        beta: user.beta,
+        tradeCount: user.tradeCount,
+      });
+
+      user.lastReputationUpdate = new Date();
+      await queryRunner.manager.save(user);
+
+      // 4. Save the Audit Log
+      const log = this.logRepo.create({
+        userId,
+        changeType: type,
+        resultingScore: user.reputationScore,
+        alphaSnapshot: user.alpha,
+        betaSnapshot: user.beta,
+        reason: severity
+          ? `[Resolution: ${severity.toUpperCase()}] ${reason}`
+          : reason,
+      });
+      await queryRunner.manager.save(log);
+
+      // 5. Commit all changes together
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      this.logger.error(
+        `Failed to update reputation for user ${userId}`,
+        error,
+      );
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
-
-    const decayedState = this.applyLazyDecay(user);
-    Object.assign(user, {
-      alpha: decayedState.alpha,
-      beta: decayedState.beta,
-      tradeCount: decayedState.tradeCount,
-    });
-
-    if (type === ReputationChangeType.SUCCESS) {
-      user.alpha += 1;
-      user.tradeCount += 1;
-    } else if (type === ReputationChangeType.FAILURE) {
-      user.beta += 1;
-    }
-
-    user.reputationScore = this.calculateScore({
-      ...decayedState,
-      alpha: user.alpha,
-      beta: user.beta,
-      tradeCount: user.tradeCount,
-    });
-
-    user.lastReputationUpdate = new Date();
-    await this.userRepo.save(user);
-
-    await this.logRepo.save({
-      userId,
-      changeType: type,
-      resultingScore: user.reputationScore,
-      alphaSnapshot: user.alpha,
-      betaSnapshot: user.beta,
-      reason: severity
-        ? `[Resolution: ${severity.toUpperCase()}] ${reason}`
-        : reason,
-    });
   }
 }
