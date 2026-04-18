@@ -47,17 +47,17 @@ export class ReputationService {
     if (!config || !penalties) return 0;
 
     const severityMap = config.penalties.severities;
-    const halfLife = config.decay.penaltyHalfLifeDays || 30;
+    const halfLife = config.decay.penaltyHalfLifeDays || 90;
     const now = Date.now();
 
     return penalties
-      .filter((p) => p.isActive)
+      .filter((p) => p.isActive) // Only consider active penalties for weight calculation
       .reduce((sum, penalty) => {
         // Get the impact directly from config based on the severity enum key
         const initialImpact = severityMap[penalty.severity] ?? 0;
 
         const msElapsed = now - penalty.createdAt.getTime();
-        const daysElapsed = msElapsed / (1000 * 60 * 60 * 24);
+        const daysElapsed = msElapsed / (1000 * 60 * 60 * 24); // Convert ms to days
         const decayFactor = Math.pow(0.5, daysElapsed / halfLife);
 
         return sum + initialImpact * decayFactor;

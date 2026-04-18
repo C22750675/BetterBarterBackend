@@ -2,8 +2,8 @@ const reputation = () => ({
   reputation: {
     weights: {
       history: 0.55, // Weight of Bayesian performance (Alpha / Alpha + Beta)
-      verification: 0.35, // Weight of identity proof (Email/Phone)
-      engagement: 0.1, // Weight of transaction volume (Trade Count)
+      verification: 0.3, // Weight of identity proof (Email/Phone)
+      engagement: 0.15, // Weight of transaction volume (Trade Count)
     },
     sigmoid: {
       k: 10, // Steepness: determines how quickly trust is gained/lost
