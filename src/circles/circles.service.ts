@@ -11,6 +11,7 @@ import { Membership } from './entities/membership.entity.js';
 import { DataSource, Repository } from 'typeorm';
 import { CreateCircleDto } from './dtos/create-circle.dto.js';
 import { UpdateCircleDto } from './dtos/update-circle.dto.js';
+import { JoinCircleDto } from './dtos/join-circle.dto.js';
 import { User } from '../users/entities/user.entity.js';
 import { Point } from 'geojson';
 import { QueryDeepPartialEntity } from 'typeorm/query-builder/QueryPartialEntity.js';
@@ -155,7 +156,7 @@ export class CirclesService {
     return circle;
   }
 
-  async joinCircle(circleId: string, user: User) {
+  async joinCircle(circleId: string, joinDto: JoinCircleDto, user: User) {
     const circle = await this.circleRepository.findOneBy({ id: circleId });
     if (!circle) {
       throw new NotFoundException(`Circle with ID ${circleId} not found`);
@@ -164,6 +165,22 @@ export class CirclesService {
     if (user.reputationScore < circle.minimumRepThreshold) {
       throw new ForbiddenException(
         `Your reputation is too low to join this circle (Required: ${circle.minimumRepThreshold})`,
+      );
+    }
+
+    // Check if the user's location is within the circle's defined radius
+    const isWithinRadius = await this.circleRepository
+      .createQueryBuilder('circle')
+      .where('circle.id = :circleId', { circleId })
+      .andWhere(
+        `ST_DWithin(circle.origin, ST_MakePoint(:lon, :lat), circle.radius)`,
+        { lon: joinDto.lon, lat: joinDto.lat },
+      )
+      .getOne();
+
+    if (!isWithinRadius) {
+      throw new ForbiddenException(
+        "You must be physically within the circle's radius to join it.",
       );
     }
 

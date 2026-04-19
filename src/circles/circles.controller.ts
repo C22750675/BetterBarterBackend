@@ -15,6 +15,7 @@ import {
 import { CirclesService } from './circles.service.js';
 import { CreateCircleDto } from './dtos/create-circle.dto.js';
 import { UpdateCircleDto } from './dtos/update-circle.dto.js';
+import { JoinCircleDto } from './dtos/join-circle.dto.js';
 import { JwtAuthGuard } from '../auth/decorators/jwt-auth.guard.js';
 import { GetUser } from '../auth/decorators/get-user.decorator.js';
 import { User } from '../users/entities/user.entity.js';
@@ -80,9 +81,10 @@ export class CirclesController {
   @Post(':id/join')
   async joinCircle(
     @Param('id', ParseUUIDPipe) circleId: string,
+    @Body() joinCircleDto: JoinCircleDto,
     @GetUser() user: User,
   ) {
-    return this.circlesService.joinCircle(circleId, user);
+    return this.circlesService.joinCircle(circleId, joinCircleDto, user);
   }
 
   @Delete(':id/leave')
