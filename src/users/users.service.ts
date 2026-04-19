@@ -1,16 +1,19 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, Inject } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity.js';
 import * as bcrypt from 'bcrypt';
 import { RegisterUserDto } from './dtos/register-user.dto.js';
 import { ValidatedUser } from '../auth/interfaces/validated-user.type.js';
+import { ReputationService } from '../reputation/reputation.service.js';
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private readonly usersRepository: Repository<User>,
+    @Inject(ReputationService)
+    private readonly reputationService: ReputationService,
   ) {}
 
   // Find a user by their username, explicitly selecting the passwordHash
@@ -35,9 +38,21 @@ export class UsersService {
       saltRounds,
     );
 
+    // 1. Calculate the initial reputation score for a brand new account
+    const initialReputationScore = this.reputationService.calculateScore({
+      alpha: 2,
+      beta: 1,
+      tradeCount: 0,
+      penaltyWeight: 0,
+      isEmailVerified: false,
+      isPhoneVerified: false,
+    });
+
+    // 2. Create the user entity with the calculated score
     const newUser = this.usersRepository.create({
       ...registerUserDto,
       passwordHash: hashedPassword,
+      reputationScore: initialReputationScore,
     });
 
     return this.usersRepository.save(newUser);

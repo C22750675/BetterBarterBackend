@@ -157,6 +157,62 @@ export class ReputationService {
     return Number.parseFloat(finalScore.toFixed(2));
   }
 
+  /**
+   * Safely increments the trade volume count for a user and recalculates their score.
+   */
+  async incrementUserTradeCount(userId: string) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 1. Fetch user WITH the lock but WITHOUT relations to prevent Postgres LEFT JOIN errors
+      const user = await queryRunner.manager.findOne(User, {
+        where: { id: userId },
+        lock: { mode: 'pessimistic_write' },
+      });
+
+      if (!user) {
+        await queryRunner.rollbackTransaction();
+        return;
+      }
+
+      // 2. Fetch the penalties separately
+      user.penaltyHistory = await queryRunner.manager.find(Penalty, {
+        where: { user: { id: userId } },
+      });
+
+      // 3. Decay existing stats first
+      const decayedState = this.applyLazyDecay(user);
+      Object.assign(user, {
+        alpha: decayedState.alpha,
+        beta: decayedState.beta,
+        tradeCount: decayedState.tradeCount + 1, // Increment engagement count
+      });
+
+      // 4. Recalculate score with the newly incremented tradeCount
+      user.reputationScore = this.calculateScore({
+        ...decayedState,
+        alpha: user.alpha,
+        beta: user.beta,
+        tradeCount: user.tradeCount,
+      });
+
+      user.lastReputationUpdate = new Date();
+      await queryRunner.manager.save(user);
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      this.logger.error(
+        `Failed to increment trade count for user ${userId}`,
+        error,
+      );
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
   async updateReputation(
     userId: string,
     type: ReputationChangeType,
@@ -169,12 +225,9 @@ export class ReputationService {
     await queryRunner.startTransaction();
 
     try {
-      // 1. Fetch user using the query runner manager
-      // We use a pessimistic_write lock here to prevent race conditions if a user
-      // receives two ratings at the exact same millisecond.
+      // 1. Fetch user WITH the lock but WITHOUT relations
       const user = await queryRunner.manager.findOne(User, {
         where: { id: userId },
-        relations: ['penaltyHistory'],
         lock: { mode: 'pessimistic_write' },
       });
 
@@ -183,7 +236,12 @@ export class ReputationService {
         return;
       }
 
-      // 2. Handle Penalty Creation
+      // 2. Fetch the penalties separately
+      user.penaltyHistory = await queryRunner.manager.find(Penalty, {
+        where: { user: { id: userId } },
+      });
+
+      // 3. Handle Penalty Creation
       if (
         type === ReputationChangeType.PENALTY &&
         severity &&
@@ -200,7 +258,7 @@ export class ReputationService {
         user.penaltyHistory = [...(user.penaltyHistory || []), penalty];
       }
 
-      // 3. Calculate new decayed state and update alpha/beta
+      // 4. Calculate new decayed state and update alpha/beta
       const decayedState = this.applyLazyDecay(user);
       Object.assign(user, {
         alpha: decayedState.alpha,
@@ -210,7 +268,6 @@ export class ReputationService {
 
       if (type === ReputationChangeType.SUCCESS) {
         user.alpha += 1;
-        user.tradeCount += 1;
       } else if (type === ReputationChangeType.FAILURE) {
         user.beta += 1;
       }
@@ -225,7 +282,7 @@ export class ReputationService {
       user.lastReputationUpdate = new Date();
       await queryRunner.manager.save(user);
 
-      // 4. Save the Audit Log
+      // 5. Save the Audit Log
       const log = this.logRepo.create({
         userId,
         changeType: type,
@@ -238,7 +295,7 @@ export class ReputationService {
       });
       await queryRunner.manager.save(log);
 
-      // 5. Commit all changes together
+      // 6. Commit all changes together
       await queryRunner.commitTransaction();
     } catch (error) {
       await queryRunner.rollbackTransaction();

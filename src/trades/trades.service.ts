@@ -250,10 +250,16 @@ export class TradesService {
   async updateStatus(tradeId: string, status: TradeStatus) {
     const trade = await this.tradeRepo.findOne({
       where: { id: tradeId },
-      relations: ['proposer', 'offeredItem'],
+      // Added recipient relation so we have both user IDs ready
+      relations: ['proposer', 'offeredItem', 'recipient'],
     });
 
     if (!trade) throw new NotFoundException('Trade not found');
+
+    // Check if it is transitioning to completed for the very first time
+    const isNewlyCompleted =
+      status === TradeStatus.COMPLETED &&
+      trade.status !== TradeStatus.COMPLETED;
 
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -290,6 +296,22 @@ export class TradesService {
 
       const savedTrade = await queryRunner.manager.save(trade);
       await queryRunner.commitTransaction();
+
+      // Trigger the tradeCount increment logic only AFTER the transaction completes
+      // successfully. We fire and forget asynchronously so it doesn't block the HTTP response.
+      if (isNewlyCompleted) {
+        Promise.all([
+          trade.proposerId
+            ? this.reputationService.incrementUserTradeCount(trade.proposerId)
+            : Promise.resolve(),
+          trade.recipientId
+            ? this.reputationService.incrementUserTradeCount(trade.recipientId)
+            : Promise.resolve(),
+        ]).catch((err) =>
+          console.error('Failed to update engagement scores:', err),
+        );
+      }
+
       return savedTrade;
     } catch (err) {
       await queryRunner.rollbackTransaction();
