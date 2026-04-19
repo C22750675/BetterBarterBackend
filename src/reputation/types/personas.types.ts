@@ -10,7 +10,7 @@ export interface PersonaBehavior {
 }
 
 /**
- * A comprehensive set of 10 personas designed to test the extremes of the
+ * A comprehensive set of 13 personas designed to test the extremes of the
  * reputation algorithm, including asymmetrical decay and sigmoid sensitivity.
  */
 export const MARKETPLACE_PERSONAS: PersonaBehavior[] = [
