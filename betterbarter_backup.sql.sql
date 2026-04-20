@@ -87,6 +87,60 @@ VALUES
 	);
 
 INSERT INTO
+	public."user" (
+		id,
+		username,
+		"passwordHash",
+		email,
+		"phoneNumber",
+		"isEmailVerified",
+		"isPhoneVerified",
+		bio,
+		"profilePictureUrl",
+		"reputationScore",
+		alpha,
+		beta,
+		"tradeCount",
+		"lastReputationUpdate",
+		"createdAt"
+	)
+VALUES
+	(
+		'874559b9-d80b-4a37-bb2c-fd064666814f' :: uuid,
+		'alicehogarty',
+		'$2b$10$idbQC8FdUGX2ovEUkt785eoTmmyEBvEqj2XhmqcDNCACQricJhZqi',
+		NULL,
+		NULL,
+		false,
+		false,
+		'Welcome to my profile! I grow seasonal fruits and vegetables.',
+		'/733bf22f06c369ab0789413f12cb1cbe7112bb016057be4d80f1295cd6bb785e.jpg',
+		8.84,
+		2.0,
+		1.0,
+		0,
+		NULL,
+		'2026-04-20 19:56:04.82991'
+	),
+	(
+		'182ab79c-a048-4149-bd33-90ad924ab526' :: uuid,
+		'markbaker',
+		'$2b$10$gl7KUIMkpsmJFazT5NvDMOyPyA2zlrfsNmPdy.2TJ0EUiSQjDy/y.',
+		NULL,
+		NULL,
+		false,
+		false,
+		'Hello, I''m Mark. I love to help students by trading budget, high-quality meals every week.',
+		'/10e2744df3a6487dbe984d971075da94378bc73e88a7603b6ce712c91ada4508.jpg',
+		8.84,
+		2.0,
+		1.0,
+		0,
+		NULL,
+		'2026-04-20 21:01:31.735945'
+	);
+
+INSERT INTO
 	public.circle (
 		id,
 		"name",
@@ -105,7 +159,7 @@ VALUES
 		'TUD Grangegorman Food Trade',
 		'Welcome to the Grangegorman Campus Circle! We love to trade a wide range of homemade and homegrown food.',
 		'/b7f5d1861264ea9f507b3b8fe1bc73b32c1c7f27b81bf409daa1a7d6d6f9c60f.jpg',
-		'SRID=4326;POINT (-6.280180920211734 53.355295282136474)' :: public.geography,
+		'SRID=4326;POINT (-6.280180920211734 53.355295282136474)',
 		300,
 		5,
 		0,
@@ -117,7 +171,7 @@ VALUES
 		'Stoneybatter Handmade Clothes',
 		'From knitwear to leathercrafts! ',
 		'/0b2a5b2244a504ee4404bf259e05bd8d22be948421ac1a7b3e53e3fc912db2f4.png',
-		'SRID=4326;POINT (-6.284738491344575 53.352892715714454)' :: public.geography,
+		'SRID=4326;POINT (-6.284738491344575 53.352892715714454)',
 		250,
 		5,
 		0,
@@ -129,7 +183,7 @@ VALUES
 		'The Liberties Student Meals',
 		'Trade for pre-made meals, for busy students! ',
 		'/cdce98ad3a18c4fce47f62fdb98653db60378a3166ec0a96d61e3ba3615e1377.jpg',
-		'SRID=4326;POINT (-6.281221644352172 53.34158787095182)' :: public.geography,
+		'SRID=4326;POINT (-6.281221644352172 53.34158787095182)',
 		400,
 		5,
 		0,
@@ -299,58 +353,4 @@ VALUES
 		'81505a5a-d3a7-45b0-b1d7-a84e53283f45' :: uuid,
 		false,
 		false
-	);
-
-INSERT INTO
-	public."user" (
-		id,
-		username,
-		"passwordHash",
-		email,
-		"phoneNumber",
-		"isEmailVerified",
-		"isPhoneVerified",
-		bio,
-		"profilePictureUrl",
-		"reputationScore",
-		alpha,
-		beta,
-		"tradeCount",
-		"lastReputationUpdate",
-		"createdAt"
-	)
-VALUES
-	(
-		'874559b9-d80b-4a37-bb2c-fd064666814f' :: uuid,
-		'alicehogarty',
-		'$2b$10$idbQC8FdUGX2ovEUkt785eoTmmyEBvEqj2XhmqcDNCACQricJhZqi',
-		NULL,
-		NULL,
-		false,
-		false,
-		'Welcome to my profile! I grow seasonal fruits and vegetables.',
-		'/733bf22f06c369ab0789413f12cb1cbe7112bb016057be4d80f1295cd6bb785e.jpg',
-		8.84,
-		2.0,
-		1.0,
-		0,
-		NULL,
-		'2026-04-20 19:56:04.82991'
-	),
-	(
-		'182ab79c-a048-4149-bd33-90ad924ab526' :: uuid,
-		'markbaker',
-		'$2b$10$gl7KUIMkpsmJFazT5NvDMOyPyA2zlrfsNmPdy.2TJ0EUiSQjDy/y.',
-		NULL,
-		NULL,
-		false,
-		false,
-		'Hello, I''m Mark. I love to help students by trading budget, high-quality meals every week.',
-		'/10e2744df3a6487dbe984d971075da94378bc73e88a7603b6ce712c91ada4508.jpg',
-		8.84,
-		2.0,
-		1.0,
-		0,
-		NULL,
-		'2026-04-20 21:01:31.735945'
 	);
