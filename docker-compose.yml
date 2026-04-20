@@ -1,24 +1,40 @@
 services:
-  db:
+  betterbarter-db:
     image: postgis/postgis:16-3.4-alpine
-    
     container_name: betterbarter-db
-    
-    # Docker Compose will automatically read values from the .env file
-    # in the same directory
+    restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USERNAME}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
       POSTGRES_DB: ${DB_NAME}
-      
-    # Map the container's port 5432 to the host machine's port 5432
-    ports:
-      - "5432:5432"
-      
-    # Define a volume to persist the database data
     volumes:
       - ./data/postgis:/var/lib/postgresql/data
-      
-    # Set a restart policy to ensure the database container starts automatically
-    # if it crashes or if Docker is restarted
+    networks:
+      - betterbarter-net
+
+  betterbarter-api:
+    build: .
+    container_name: betterbarter-api
     restart: unless-stopped
+    depends_on:
+      - betterbarter-db
+    env_file:
+      - .env
+    environment:
+      # Overriding DB_HOST to use the internal Docker service name
+      - DB_HOST=betterbarter-db
+      - DB_PORT=5432
+    volumes:
+      # Persist uploaded images on the host machine
+      - ./uploads:/app/imageUploads
+    networks:
+      - betterbarter-net
+      # Linked to your cloudflared network
+      - mountain-network 
+
+networks:
+  betterbarter-net:
+    driver: bridge
+  # Changed to match your existing cloudflared network
+  mountain-network:
+    external: true
